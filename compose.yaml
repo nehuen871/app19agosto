@@ -1,0 +1,80 @@
+name: utn-frba
+x-app: &app
+  build: .
+  init: true
+  volumes:
+    - ./apps/api/src:/workspace/apps/api/src
+    - api-generated:/workspace/apps/api/src/generated
+    - ./apps/admin/app:/workspace/apps/admin/app
+    - ./apps/mobile/app:/workspace/apps/mobile/app
+    - ./apps/mobile/components:/workspace/apps/mobile/components
+    - ./apps/mobile/services:/workspace/apps/mobile/services
+    - ./packages/types/index.ts:/workspace/packages/types/index.ts
+    - ./packages/validation/index.ts:/workspace/packages/validation/index.ts
+    - ./packages/api-client/index.ts:/workspace/packages/api-client/index.ts
+    - ./packages/design-tokens/index.ts:/workspace/packages/design-tokens/index.ts
+    - ./packages/config:/workspace/packages/config
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: utn
+      POSTGRES_USER: utn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-utn_local_only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U utn -d utn']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  migrate:
+    <<: *app
+    command: pnpm --filter @utn/api db:deploy
+    environment:
+      DATABASE_URL: postgresql://utn:${POSTGRES_PASSWORD:-utn_local_only}@db:5432/utn
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    <<: *app
+    command: sh -c 'pnpm --filter @utn/api exec prisma generate && pnpm --filter @utn/api dev'
+    environment:
+      DATABASE_URL: postgresql://utn:${POSTGRES_PASSWORD:-utn_local_only}@db:5432/utn
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
+      CORS_ORIGINS: http://localhost:${ADMIN_PORT:-3001},http://localhost:8081
+    ports: ['127.0.0.1:4000:4000']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://localhost:4000/health").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  admin:
+    <<: *app
+    command: pnpm --filter @utn/admin dev
+    environment:
+      API_URL: http://api:4000/api/v1
+    ports: ['127.0.0.1:${ADMIN_PORT:-3001}:3000']
+    depends_on:
+      api:
+        condition: service_healthy
+  mobile:
+    <<: *app
+    command: pnpm --filter @utn/mobile start --web --host lan
+    environment:
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
+      BROWSER: none
+    ports: ['127.0.0.1:8081:8081']
+    depends_on:
+      api:
+        condition: service_healthy
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ['127.0.0.1:8025:8025']
+volumes:
+  postgres-data:
+  api-generated:

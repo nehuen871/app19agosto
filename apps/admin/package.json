@@ -1,0 +1,21 @@
+{
+  "name": "@utn/admin",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^16.1.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "@utn/api-client": "workspace:*",
+    "@utn/design-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/node": "^22.19.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@utn/api-client",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "dependencies": {
+    "@utn/types": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  }
+}

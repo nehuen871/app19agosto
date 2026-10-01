@@ -1,0 +1,11 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: system-ui, sans-serif; font-size: var(--body-size); line-height: var(--body-height); }
+header { display: flex; flex-wrap: wrap; gap: var(--space-md); background: var(--primary); color: var(--primaryForeground); padding: var(--space-lg); }
+main { max-width: 72rem; margin: auto; padding: var(--space-xl) var(--space-lg); } /* Reading width capped for large screens. */
+h1 { font-size: var(--heading-size); line-height: var(--heading-height); }
+article { padding: var(--space-lg); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin: var(--space-md) 0; }
+.eyebrow, article > span { color: var(--mutedForeground); }
+a, summary { color: var(--primary); }
+summary { cursor: pointer; padding: var(--space-sm) 0; }
+button { background: var(--primary); color: var(--primaryForeground); padding: var(--space-md); border: 0; border-radius: var(--radius); cursor: pointer; font: inherit; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: var(--space-xs); }

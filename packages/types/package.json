@@ -1,0 +1,10 @@
+{
+  "name": "@utn/types",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "dependencies": {},
+  "scripts": {
+    "typecheck": "tsc"
+  }
+}

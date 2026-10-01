@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "UTN FRBA",
+    "slug": "utn-frba",
+    "scheme": "utnfrba",
+    "version": "0.1.0",
+    "plugins": [
+      "expo-router"
+    ],
+    "web": {
+      "bundler": "metro"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

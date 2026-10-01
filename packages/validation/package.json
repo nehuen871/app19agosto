@@ -1,0 +1,12 @@
+{
+  "name": "@utn/validation",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "dependencies": {
+    "zod": "^4.3.5"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  }
+}

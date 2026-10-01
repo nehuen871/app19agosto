@@ -1,0 +1,16 @@
+{
+  "name": "utn-frba",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @utn/api test",
+    "lint": "eslint apps packages"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "eslint": "^9.39.0",
+    "typescript-eslint": "^8.50.0",
+    "@eslint/js": "^9.39.0"
+  }
+}
