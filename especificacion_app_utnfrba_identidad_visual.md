@@ -553,3 +553,326 @@ implementar microservicios, colas complejas ni segmentación académica
 antes de necesitarlos. Mantener límites claros entre mobile, admin, API
 y paquetes compartidos para poder evolucionar sin reescribir el
 producto.
+
+# 20. Identidad visual oficial UTN FRBA
+
+Esta sección traduce el manual de marca provisto a reglas concretas para interfaces móviles y web. Cuando exista conflicto entre una decisión visual local y estas reglas, prevalece esta sección.
+
+## 20.1 Paleta oficial
+
+Usar estos colores como tokens de marca:
+
+```text
+brand.blue        = #1F5AAA
+brand.lightBlue   = #83A1BB
+brand.cyanGray    = #C0D4D3
+brand.yellow      = #EDAA37
+brand.warmGray    = #F3EDDD
+brand.beigeGray   = #E0D6CA
+brand.black       = #1C1C1C
+```
+
+### Reglas de uso
+
+- `brand.blue`: color institucional principal. Usarlo en acciones primarias, barras, headers, tabs activas, enlaces importantes y fondos de marca.
+- `brand.yellow`: acento. Reservarlo para énfasis, destacados, badges o estados visuales secundarios. No debe competir con el azul como color principal de interacción.
+- `brand.lightBlue` y `brand.cyanGray`: superficies secundarias, fondos suaves, chips, bloques informativos y estados seleccionados de baja intensidad.
+- `brand.warmGray` y `brand.beigeGray`: fondos editoriales, superficies de contenido y secciones con tono institucional más cálido.
+- `brand.black`: texto principal, fondos oscuros y alto contraste.
+
+No crear nuevos colores de marca sin aprobación. Los estados funcionales `success`, `warning`, `error` e `info` pueden usar colores semánticos adicionales, pero deben convivir visualmente con esta paleta y conservar contraste accesible.
+
+## 20.2 Tipografía oficial
+
+Familias del manual:
+
+```text
+Archivo Black       -> títulos principales
+Libre Baskerville   -> acentos / frases editoriales
+Libre Franklin      -> textos corridos y UI
+Archivo             -> variante secundaria
+```
+
+### Mapeo para producto digital
+
+```text
+Display / Hero        -> Archivo Black
+Heading1 / Heading2   -> Archivo Black
+Heading3              -> Archivo Black o Libre Franklin Semibold
+Body                  -> Libre Franklin
+BodySmall             -> Libre Franklin
+Label                 -> Libre Franklin Semibold
+Caption               -> Libre Franklin
+EditorialAccent       -> Libre Baskerville
+AlternateHeading      -> Archivo
+```
+
+### Reglas
+
+- `Libre Franklin` es la tipografía base de interfaz.
+- `Archivo Black` se reserva para títulos con fuerte jerarquía visual; evitar usarla en textos largos.
+- `Libre Baskerville` se utiliza como acento editorial, citas o bloques especiales; no en controles, formularios o cuerpos extensos.
+- `Archivo` puede usarse como variante cuando se necesite un tono menos pesado que `Archivo Black`.
+- No mezclar las cuatro familias en una misma pantalla si no es necesario.
+- Mantener legibilidad y accesibilidad por encima de efectos editoriales.
+
+## 20.3 Jerarquía sugerida
+
+```text
+Display:        Archivo Black, 40-48, weight 400
+Heading1:       Archivo Black, 32-36
+Heading2:       Archivo Black, 26-30
+Heading3:       Archivo Black / Libre Franklin 700, 20-24
+Body:           Libre Franklin, 16-18
+BodySmall:      Libre Franklin, 14
+Label:          Libre Franklin 600, 14-16
+Caption:        Libre Franklin, 12-13
+EditorialAccent: Libre Baskerville, 16-22
+```
+
+Los tamaños son rangos de producto y pueden adaptarse por breakpoint, sin alterar la jerarquía entre estilos.
+
+## 20.4 Logotipo, isotipo e isologo
+
+Se deben conservar los identificadores fundacionales. La actualización de marca se concentra en el sistema visual complementario; por lo tanto, no redibujar, reinterpretar ni estilizar arbitrariamente el logotipo, isotipo o isologo.
+
+### Regla general de tamaño
+
+En composiciones informativas normales, el recurso de marca debe ser el elemento visual más pequeño o uno de los más discretos. Solo puede convertirse en protagonista cuando la intención explícita sea llevar la atención a la marca.
+
+### Consistencia en secuencias
+
+En carruseles, onboarding, tutoriales o secuencias de varias pantallas, si el recurso de marca aparece en una ubicación determinada en la primera pieza, conservar posición y tamaño en las siguientes pantallas de esa secuencia.
+
+### Ubicación permitida - Isotipo
+
+```text
+Margen superior: izquierda, derecha o centro
+Margen inferior: derecha o centro
+Sin margen inferior: izquierda
+Siempre dentro del área de seguridad
+```
+
+Evitar usar el isotipo intervenido o a gran escala salvo piezas excepcionales de carácter artístico.
+
+### Ubicación permitida - Logotipo
+
+```text
+Margen superior: izquierda, derecha o centro
+Margen inferior: derecha o centro
+Sin margen inferior: izquierda
+Siempre dentro del área de seguridad
+```
+
+En pantallas con mucho texto, mantenerlo pequeño. Cuando la marca sea el foco principal, puede aumentar de tamaño.
+
+Si se combina con isotipo:
+- ambos deben tener tamaño visual equivalente;
+- deben quedar alineados;
+- deben colocarse en lados opuestos cuando la composición lo requiera.
+
+### Ubicación permitida - Isologo
+
+```text
+Margen superior: centro
+Margen inferior: centro
+Centro de composición: permitido
+Sin margen inferior: esquinas superiores o inferiores, izquierda o derecha
+Siempre dentro del área de seguridad
+```
+
+Si el isologo es la pieza visual dominante, debe ir centrado.
+
+## 20.5 Área de seguridad
+
+Los assets de marca deben tener un contenedor con padding interno suficiente para evitar que queden pegados a bordes, notch, navegación o controles.
+
+Implementación sugerida:
+
+```text
+BrandMarkContainer
+  paddingHorizontal >= spacing.md
+  paddingVertical   >= spacing.sm
+  respectSafeArea   = true
+```
+
+Nunca cortar, deformar o comprimir un recurso de marca para hacerlo entrar en un espacio insuficiente.
+
+## 20.6 Fotografía e imágenes editoriales
+
+El manual define un tratamiento visual frío y de alto contraste para imágenes institucionales.
+
+En producto digital:
+
+- Priorizar fotografías con temperatura visual fría o neutra.
+- Se puede aplicar un tratamiento equivalente a un filtro frío tipo `Polar` del manual, siempre preservando legibilidad y tonos de piel razonables.
+- Para imágenes con texto superpuesto, usar sombreado superior y/o inferior cuando mejore contraste.
+- La sombra debe ser negra o derivada de la paleta, con opacidad ajustada al contenido.
+- No aplicar filtros destructivos ni efectos que dificulten la lectura o reconocimiento de la imagen.
+
+## 20.7 Tratamiento gráfico y textura
+
+El manual contempla recursos rugosos/gastados y texturas de papel sutiles.
+
+En interfaces digitales estos efectos son **decorativos y excepcionales**:
+
+- Permitidos en hero banners, portadas de campaña, pantallas editoriales o piezas especiales.
+- Evitarlos en formularios, tablas, listas, navegación, cards funcionales o fondos de lectura prolongada.
+- Usar textura con baja opacidad.
+- No reducir contraste de texto ni accesibilidad.
+- No convertir el efecto "grunge" en patrón visual de toda la aplicación.
+
+## 20.8 Componentes UI adaptados a la marca
+
+### Button Primary
+
+```text
+background: brand.blue
+text: blanco / foreground de máximo contraste
+font: Libre Franklin Semibold
+radius: token del Design System
+```
+
+### Button Secondary
+
+```text
+background: transparente o brand.lightBlue suave
+border: brand.blue
+text: brand.blue o brand.black según contraste
+```
+
+### Button Accent
+
+Usar `brand.yellow` solo para acciones de énfasis secundario o campañas específicas. No convertirlo en el CTA principal por defecto.
+
+### Cards
+
+```text
+background: blanco, brand.warmGray o surface equivalente
+border: brand.cyanGray / border token
+heading: Archivo Black o Libre Franklin Semibold
+body: Libre Franklin
+```
+
+### NewsCard Featured
+
+Puede usar:
+- imagen de gran presencia;
+- overlay oscuro para texto;
+- etiqueta/categoría en amarillo;
+- título en Archivo Black;
+- cuerpo en Libre Franklin.
+
+### Badges / Chips
+
+- Institucional: azul + foreground contrastante.
+- Destacado: amarillo + negro.
+- Informativo suave: lightBlue / cyanGray.
+
+### Inputs
+
+- Tipografía Libre Franklin.
+- Bordes neutros de la paleta.
+- Focus visible con azul institucional.
+- Error semántico separado de los colores de marca.
+
+### Header / Top Bar
+
+Opción principal:
+
+```text
+background: brand.blue o brand.black
+brand asset: versión con contraste correcto
+text/icons: alto contraste
+```
+
+La marca nunca debe quedar visualmente pegada al borde.
+
+## 20.9 Fondos permitidos
+
+Prioridad sugerida:
+
+1. blanco / background neutro;
+2. `brand.warmGray` para bloques editoriales;
+3. `brand.blue` para bloques institucionales fuertes;
+4. `brand.black` para hero o piezas de alto impacto;
+5. `brand.yellow` solo como acento, no como fondo dominante permanente.
+
+## 20.10 Composición
+
+La identidad visual sugiere una composición editorial, limpia y con contraste claro entre azul, tonos cálidos, negro y blanco.
+
+Reglas para producto:
+
+- priorizar bloques amplios y jerarquía clara;
+- dejar aire alrededor de títulos y marca;
+- no sobrecargar cards con ornamentación;
+- utilizar amarillo para dirigir atención de forma selectiva;
+- mantener consistencia de alineación entre pantallas relacionadas;
+- conservar una relación visual fuerte entre imagen, título y marca en piezas editoriales.
+
+## 20.11 Reglas obligatorias para agentes de IA
+
+Antes de crear o modificar un componente visual, el agente debe:
+
+1. Revisar esta sección de identidad visual.
+2. Reutilizar exclusivamente los tokens de marca definidos.
+3. Aplicar las familias tipográficas según su rol.
+4. No inventar una nueva paleta.
+5. No redibujar ni alterar logotipo, isotipo o isologo.
+6. Mantener el recurso de marca dentro del área de seguridad.
+7. Usar el azul como principal color institucional de interacción.
+8. Usar amarillo solo como acento.
+9. Reservar texturas/grunge para piezas editoriales excepcionales.
+10. Mantener consistencia de posición del recurso de marca en secuencias.
+11. Verificar contraste y accesibilidad antes de dar una tarea por terminada.
+12. Si falta un asset oficial, dejar un placeholder con nombre semántico (`brand-logo`, `brand-isotype`, `brand-isologo`) y NO recrearlo de memoria.
+
+## 20.12 Tokens sugeridos
+
+```ts
+export const brand = {
+  colors: {
+    blue: '#1F5AAA',
+    lightBlue: '#83A1BB',
+    cyanGray: '#C0D4D3',
+    yellow: '#EDAA37',
+    warmGray: '#F3EDDD',
+    beigeGray: '#E0D6CA',
+    black: '#1C1C1C',
+  },
+  fonts: {
+    display: 'Archivo Black',
+    headingAlt: 'Archivo',
+    body: 'Libre Franklin',
+    accent: 'Libre Baskerville',
+  },
+} as const;
+```
+
+## 20.13 Checklist visual por componente
+
+Antes de aprobar un componente:
+
+- ¿Usa tokens oficiales?
+- ¿Respeta la jerarquía tipográfica?
+- ¿El azul funciona como color institucional principal?
+- ¿El amarillo se usa como acento y no domina sin necesidad?
+- ¿La marca conserva proporción, ubicación y área de seguridad?
+- ¿El componente sigue siendo legible sin efectos editoriales?
+- ¿El contraste cumple accesibilidad?
+- ¿Se ve coherente con mobile y ABM?
+- ¿Se evitó duplicar estilos ya existentes?
+
+## 20.14 Assets de marca
+
+Los archivos oficiales de logotipo, isotipo e isologo deben guardarse en una carpeta dedicada y tratarse como assets inmutables:
+
+```text
+packages/brand-assets/
+  logo/
+  isotype/
+  isologo/
+```
+
+Preferir SVG para escalabilidad cuando el archivo oficial esté disponible. No vectorizar desde capturas si existen originales oficiales.
