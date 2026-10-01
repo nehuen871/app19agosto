@@ -24,3 +24,5 @@ export function createApiClient(baseUrl: string) {
     categories: () => get<Category[]>('/categories'),
   };
 }
+
+export type { News } from '@utn/types';

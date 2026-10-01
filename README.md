@@ -65,7 +65,11 @@ Borradores, archivadas y noticias con fecha futura no se exponen. Validación co
 3. Dispositivos, preferencias, historial y envío de push independiente de publicación.
 4. Ampliar el design system, filtros visuales, pruebas de interfaz y validación en dispositivos.
 
-El esquema Prisma contiene sólo las entidades de esta entrega. Los demás modelos y flujos de la especificación aún no están implementados. Los colores actuales son provisionales y compartidos desde `packages/design-tokens`.
+El esquema Prisma contiene sólo las entidades de esta entrega. Los demás modelos y flujos de la especificación aún no están implementados. La identidad visual sigue la sección 20 de `especificacion_app_utnfrba_identidad_visual.md`: paleta oficial, Archivo Black para títulos y Libre Franklin para cuerpo/controles. Los tokens están centralizados en `packages/design-tokens`. Las fuentes TTF se sirven localmente desde `packages/brand-assets/fonts`, con sus licencias OFL (origen: https://github.com/expo/google-fonts). No se necesitan solicitudes a Google Fonts en tiempo de ejecución. Archivo y Libre Baskerville quedan definidos para futuras variantes, sin cargarlos en pantallas que no los usan.
+
+Faltan los archivos oficiales de logo/isotipo/isologo. Sus placeholders semánticos están en `packages/brand-assets/`; las barras muestran identificación textual discreta, sin imitar el logo. Las marcas futuras deben conservar sus proporciones y el padding de seguridad. El modo oscuro tiene tokens preparados y no está activado.
+
+Validación visual: TypeScript, lint y compilaciones web en Docker; revisión en Chromium de 320/375/820/1440 px, carga de las tres variantes de fuente y navegación a detalle, sin desbordamiento horizontal. Contraste calculado: blanco/azul 6,77:1; negro/amarillo 8,44:1; negro/fondo editorial 14,58:1. La comprobación en dispositivos Android/iOS reales queda pendiente.
 
 Compatibilidad consultada: [Prisma 7](https://docs.prisma.io/docs/guides/upgrade-prisma-orm/v7) [Next.js](https://nextjs.org/docs/app/getting-started/installation) y [Expo en monorepos](https://docs.expo.dev/guides/monorepos/). Se usa Node 22 y el adaptador PostgreSQL requerido por Prisma 7. El lockfile fija las resoluciones estables.
 
