@@ -31,6 +31,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <span className="brand-mark" data-brand-placeholder="brand-logo">UTN FRBA</span>
         <span className="header-label">Comunicación institucional</span>
       </div></header>
+      <nav className="admin-nav" aria-label="Administración"><a href="/admin">Noticias</a><a href="/admin/notifications">Notificaciones</a></nav>
       <main id="contenido">{children}</main>
     </body>
   </html>;

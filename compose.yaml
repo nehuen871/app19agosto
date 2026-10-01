@@ -42,6 +42,7 @@ services:
     command: sh -c 'pnpm --filter @utn/api exec prisma generate && pnpm --filter @utn/api dev'
     environment:
       DATABASE_URL: postgresql://utn:${POSTGRES_PASSWORD:-utn_local_only}@db:5432/utn
+      ADMIN_ACCESS_TOKEN: ${ADMIN_ACCESS_TOKEN:-}
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
       CORS_ORIGINS: http://localhost:${ADMIN_PORT:-3001},http://localhost:8081
     ports: ['127.0.0.1:4000:4000']
@@ -58,6 +59,7 @@ services:
     command: pnpm --filter @utn/admin dev
     environment:
       API_URL: http://api:4000/api/v1
+      ADMIN_ACCESS_TOKEN: ${ADMIN_ACCESS_TOKEN:-}
     ports: ['127.0.0.1:${ADMIN_PORT:-3001}:3000']
     depends_on:
       api:

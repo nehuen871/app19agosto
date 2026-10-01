@@ -20,7 +20,7 @@ docker compose exec api pnpm --filter @utn/api db:seed
 
 La migración se aplica antes de iniciar la API. El seed es explícito, idempotente y carga una noticia claramente identificada como demostración. La base conserva datos en un volumen. `docker compose down` detiene servicios sin borrar datos.
 
-Los puertos están limitados a localhost. Esta configuración es de desarrollo, sin TLS; no desplegarla directamente en producción. La contraseña predeterminada es exclusivamente local. Los dominios UTN permanecen sin definir hasta su confirmación; todavía no hay registro ni autenticación.
+Los puertos están limitados a localhost. Esta configuración es de desarrollo, sin TLS; no desplegarla directamente en producción. La contraseña predeterminada es exclusivamente local. Los dominios UTN permanecen sin definir hasta su confirmación; todavía no hay registro ni autenticación institucional; el administrador local tiene acceso con clave.
 
 ## Desarrollo y validación
 
@@ -80,3 +80,16 @@ Auditoría del lockfile del 30-09-2026: `pnpm audit --prod` reportó 5 avisos tr
 ```sh
 docker compose exec api pnpm audit
 ```
+
+## Cargar notificaciones
+
+Abrir http://localhost:3001/admin/notifications o el enlace **Notificaciones** del menú. El panel redirige a `/admin/login` si no hay sesión. Ingresar el valor de `ADMIN_ACCESS_TOKEN` del archivo local `.env`; es una clave aleatoria de al menos 32 caracteres, nunca debe subirse a Git. La instalación actual ya tiene una clave generada. Para instalaciones nuevas, definir una clave aleatoria en `.env` antes de iniciar Compose; sin ella los endpoints administrativos permanecen deshabilitados.
+
+El formulario permite cargar título (100 caracteres), mensaje (500) y una noticia opcional entre las últimas 20 publicaciones. Se guarda como **DRAFT**, con historial paginado y auditoría `NOTIFICATION_CREATED`. Guardar **no envía push**; el envío, dispositivos y destinatarios todavía no están implementados.
+
+- `GET /api/v1/admin/notifications?page=1&limit=20`
+- `POST /api/v1/admin/notifications` con `{title, body, newsId?}`
+
+Ambos endpoints requieren `Authorization: Bearer <ADMIN_ACCESS_TOKEN>`. El navegador recibe una cookie HttpOnly/SameSite=Strict firmada que vence a las 8 horas; la clave sólo se utiliza en el servidor al llamar a la API. Las acciones del panel comprueban sesión antes de guardar, y Next.js comprueba el origen de sus Server Actions. La cookie usa Secure en producción. Cerrar sesión borra la cookie; cambiar la clave invalida todas las sesiones después de recrear los contenedores.
+
+Este acceso es un bootstrap para administración local: el actor de auditoría es `local-admin`. No sustituye el futuro modelo de usuarios, roles USER/EDITOR/ADMIN y sesiones revocables de la especificación, que debe incorporarse antes de habilitar administración multiusuario en producción.

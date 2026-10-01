@@ -33,3 +33,18 @@ button:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
 .skip-link:focus { transform: translateY(0); }
 /* Two readable editorial columns only when the viewport can fit them. */
 @media (min-width: 768px) { .news-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.admin-nav { display: flex; flex-wrap: wrap; gap: var(--space-lg); padding: var(--space-md) var(--space-xl); max-width: var(--content-max); margin: auto; border-bottom: 1px solid var(--border); }
+.notification-columns { display: grid; gap: var(--space-xl); align-items: start; }
+.notification-form { display: grid; gap: var(--space-sm); }
+.notification-form label { font-weight: var(--label-weight); margin-top: var(--space-sm); }
+.notification-form input, .notification-form textarea, .notification-form select { width: 100%; min-width: 0; min-height: var(--touch-target); padding: var(--space-md); border: 1px solid var(--foreground); border-radius: var(--radius-md); background: var(--surface); color: var(--foreground); font: inherit; }
+.notification-form textarea { resize: vertical; }
+.notification-form button { margin-top: var(--space-md); }
+.field-help { font-size: var(--bodySmall-size); line-height: var(--bodySmall-height); }
+.form-error { color: var(--error); }
+.notification-list { display: grid; gap: var(--space-md); margin-block: var(--space-lg); }
+.notification-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.pagination { display: flex; gap: var(--space-md); flex-wrap: wrap; padding-block: var(--space-md); }
+.button-secondary { background: var(--surface); color: var(--primary); }
+/* Two columns only when the form and history retain comfortable reading width. */
+@media (min-width: 1024px) { .notification-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }

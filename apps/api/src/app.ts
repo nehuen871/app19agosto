@@ -1,3 +1,4 @@
+import { notificationsRouter } from './notifications';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -5,13 +6,14 @@ import { rateLimit } from 'express-rate-limit';
 import { ZodError } from 'zod';
 import { newsQuery, slugParam } from '@utn/validation';
 import type { PrismaClient } from './generated/prisma/client';
-export function createApp(db: PrismaClient) {
+export function createApp(db: PrismaClient, options = { adminAccessToken: process.env.ADMIN_ACCESS_TOKEN }) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors({ origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3001,http://localhost:8081').split(',') }));
   app.use(rateLimit({ windowMs: 60000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Demasiadas solicitudes', details: [] } } }));
   app.use(express.json({ limit: '32kb' }));
+  app.use('/api/v1/admin/notifications', notificationsRouter(db, options.adminAccessToken));
   app.get('/health', async (_req, res) => { await db.$queryRaw`SELECT 1`; res.json({ status: 'ok' }); });
   app.get('/api/v1/categories', async (_req, res) => { res.json(await db.category.findMany({ orderBy: { name: 'asc' } })); });
   app.get('/api/v1/news', async (req, res) => {
