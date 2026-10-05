@@ -48,3 +48,14 @@ button:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
 .button-secondary { background: var(--surface); color: var(--primary); }
 /* Two columns only when the form and history retain comfortable reading width. */
 @media (min-width: 1024px) { .notification-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+
+/* Preserve the official artwork; crop only transparent canvas padding. */
+.brand-mark { padding: var(--brand-safeAreaVertical) var(--brand-safeAreaHorizontal); flex-shrink: 0; }
+.brand-logo-viewport { display: block; position: relative; overflow: hidden; width: var(--brand-logoWidth); height: var(--brand-logoHeight); }
+.brand-logo-image { position: absolute; display: block; width: var(--brand-logoCanvasSize); height: var(--brand-logoCanvasSize); top: var(--brand-logoOffsetY); max-width: none; }
+.brand-isologo-viewport { display: block; width: var(--brand-isologoSize); height: var(--brand-isologoSize); }
+.brand-isologo-image { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.login-brand { display: flex; justify-content: center; background: var(--header); border-radius: var(--radius-lg); padding: var(--space-md); }
+.editorial-accent { font: var(--editorialAccent-weight) var(--editorialAccent-size)/var(--editorialAccent-height) var(--editorialAccent-font), serif; }
+.alternate-heading { font: var(--alternateHeading-weight) var(--alternateHeading-size)/var(--alternateHeading-height) var(--alternateHeading-font), sans-serif; }

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "UTN FRBA",
+    "name": "19 de Agosto",
     "slug": "utn-frba",
     "scheme": "utnfrba",
     "version": "0.1.0",
@@ -8,10 +8,12 @@
       "expo-router"
     ],
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "../../packages/brand-assets/isotype/brand-isotype.png"
     },
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "icon": "../../packages/brand-assets/isotype/brand-isotype.png"
   }
 }

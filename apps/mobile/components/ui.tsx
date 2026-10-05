@@ -1,11 +1,15 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+/* eslint-disable @typescript-eslint/no-require-imports -- Metro requires static asset paths. */
+import { Image, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { PropsWithChildren } from 'react';
-import { colors, spacing, radius, typography, layout, interaction } from '@utn/design-tokens';
+import { colors, spacing, radius, typography, layout, interaction, brandMark } from '@utn/design-tokens';
 const theme = colors.light;
 
-export function BrandMark() {
-  // Text-only placeholder; replace only when the unmodified official logo is supplied.
-  return <View nativeID="brand-logo" style={styles.brandMark}><Text style={styles.brandText}>UTN FRBA</Text></View>;
+export function BrandMark({ variant = 'logo' }: { variant?: 'logo' | 'isologo' }) {
+  return <View style={styles.brandMark} accessible accessibilityRole="image" accessibilityLabel={brandMark.name}>
+    <View style={variant === 'isologo' ? styles.isologoViewport : styles.logoViewport}>
+      <Image source={variant === 'isologo' ? require('../../../packages/brand-assets/isologo/brand-isologo.png') : require('../../../packages/brand-assets/logo/brand-logo.png')} style={variant === 'isologo' ? styles.isologoImage : styles.logoImage} resizeMode="contain" accessible={false} />
+    </View>
+  </View>;
 }
 export function Card({ children, featured = false }: PropsWithChildren<{ featured?: boolean }>) {
   return <View style={[styles.card, featured && styles.featured]}>{children}</View>;
@@ -35,8 +39,12 @@ export const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: theme.background },
   content: { padding: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: layout.readingMax, alignSelf: 'center' },
   state: { padding: spacing.lg, gap: spacing.md, backgroundColor: theme.background },
-  brandMark: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  brandText: { ...typography.label, color: theme.headerForeground },
+  brandMark: { paddingHorizontal: brandMark.safeAreaHorizontal, paddingVertical: brandMark.safeAreaVertical },
+  launch: { flex: 1, backgroundColor: theme.header, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.lg },
+  isologoViewport: { width: brandMark.isologoSize, height: brandMark.isologoSize },
+  isologoImage: { width: '100%', height: '100%' },
+  logoViewport: { width: brandMark.logoWidth, height: brandMark.logoHeight, overflow: 'hidden' },
+  logoImage: { position: 'absolute', width: brandMark.logoCanvasSize, height: brandMark.logoCanvasSize, top: brandMark.logoOffsetY },
   card: { backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderColor: theme.border },
   featured: { backgroundColor: theme.editorial },
   heading: { color: theme.foreground },

@@ -35,3 +35,7 @@ Con Node 22 y pnpm 10.28.2: `pnpm install --frozen-lockfile`, generar Prisma con
 Producción real requiere HTTPS para las cookies Secure del panel. El modo local conserva esa configuración de producción; para probar sesiones administrativas usar un proxy HTTPS local o el override de desarrollo.
 
 Ver [procedimiento de respaldo y recuperación](docs/operaciones.md). No ejecutar `docker compose down -v` sin autorización para borrar los datos.
+
+## Identidad visual
+
+El brandbook provisto es de **19 de Agosto**. Logos originales, paleta, tipografías y reglas de integración: [docs/identidad-visual.md](docs/identidad-visual.md). El panel sincroniza sus assets públicos desde `packages/brand-assets/` al iniciar desarrollo o construir; mobile importa los mismos originales.

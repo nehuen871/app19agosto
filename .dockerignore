@@ -11,3 +11,7 @@
 
 .pnpm-store
 **/src/generated
+
+# Original manual is tracked as documentation, not needed by production builds.
+Brandbook - 19 de Agosto.pdf
+apps/admin/public/brand

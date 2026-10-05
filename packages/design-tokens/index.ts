@@ -53,3 +53,14 @@ export const typography = {
 // Layout caps preserve reading length on desktop/tablets; touch targets meet 48px.
 export const layout = { contentMax: 1152, readingMax: 768, touchTarget: 48, coverAspect: 16 / 9 };
 export const interaction = { pressedOpacity: 0.85, disabledOpacity: 0.55 };
+
+/** Display geometry of the original 500px PNGs, without altering their pixels.
+ * The logo viewport only removes transparent top/bottom padding (y=206..302).
+ */
+export const brandMark = {
+  name: '19 de Agosto',
+  logoWidth: 160, logoHeight: 96 * (160 / 500),
+  logoCanvasSize: 160, logoOffsetY: -206 * (160 / 500),
+  isotypeSize: 40, isologoSize: 128,
+  safeAreaHorizontal: spacing.md, safeAreaVertical: spacing.sm,
+} as const;

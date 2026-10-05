@@ -554,7 +554,9 @@ antes de necesitarlos. Mantener límites claros entre mobile, admin, API
 y paquetes compartidos para poder evolucionar sin reescribir el
 producto.
 
-# 20. Identidad visual oficial UTN FRBA
+# 20. Identidad visual de 19 de Agosto en la app UTN FRBA
+
+Fuente: `Brandbook - 19 de Agosto.pdf`. Los identificadores fundacionales son los de **19 de Agosto**; no deben presentarse como el logotipo oficial de la universidad. La arquitectura y el contexto de la app UTN FRBA se mantienen. Los originales raster están extraídos del PDF en `packages/brand-assets/`, con trazabilidad en `manifest.json`.
 
 Esta sección traduce el manual de marca provisto a reglas concretas para interfaces móviles y web. Cuando exista conflicto entre una decisión visual local y estas reglas, prevalece esta sección.
 

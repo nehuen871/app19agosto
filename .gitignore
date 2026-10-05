@@ -10,3 +10,6 @@ apps/api/src/generated/
 *.tsbuildinfo
 
 .pnpm-store/
+
+# Generated from canonical assets by admin prebuild/predev.
+apps/admin/public/brand/

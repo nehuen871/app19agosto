@@ -3,19 +3,21 @@ import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { brand, colors, typography, spacing } from '@utn/design-tokens';
-import { BrandMark, LoadingIndicator } from '../components/ui';
+import { BrandMark, styles } from '../components/ui';
 const client = new QueryClient();
 
 export default function Layout() {
   const [loaded, error] = useFonts({
     [brand.fonts.display]: require('../../../packages/brand-assets/fonts/ArchivoBlack-Regular.ttf'),
     [brand.fonts.body]: require('../../../packages/brand-assets/fonts/LibreFranklin-Regular.ttf'),
+    [brand.fonts.accent]: require('../../../packages/brand-assets/fonts/LibreBaskerville-Variable.ttf'),
+    [brand.fonts.headingAlt]: require('../../../packages/brand-assets/fonts/Archivo-Variable.ttf'),
     [brand.fonts.bodySemibold]: require('../../../packages/brand-assets/fonts/LibreFranklin-SemiBold.ttf'),
   });
   if (error) return <View style={{ padding: spacing.lg, backgroundColor: colors.light.background }}><Text accessibilityRole="alert" style={{ color: colors.light.error }}>No pudimos cargar la presentación. Cerrá y volvé a abrir la app.</Text></View>;
-  if (!loaded) return <LoadingIndicator title="Preparando la app…" />;
+  if (!loaded) return <View style={styles.launch}><StatusBar style="light" /><BrandMark variant="isologo" /><ActivityIndicator color={colors.light.headerForeground} accessibilityLabel="Preparando la app…" /></View>;
   return <QueryClientProvider client={client}>
     <StatusBar style="light" />
     <Stack screenOptions={{
