@@ -1,4 +1,3 @@
-# Default production API build. Keep in sync with docker/api.Dockerfile.
 FROM node:22-bookworm-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN npm install --global pnpm@10.28.2
@@ -14,15 +13,12 @@ RUN --mount=type=cache,id=utn-pnpm,target=/root/.local/share/pnpm/store pnpm ins
 FROM deps AS build
 COPY . .
 RUN DATABASE_URL=postgresql://build:build@localhost/build pnpm --filter @utn/api exec prisma generate
-FROM build AS migrate
-USER node
-CMD ["pnpm", "--filter", "@utn/api", "db:deploy"]
-FROM build AS api-build
-RUN pnpm --filter @utn/api build
+RUN pnpm --filter @utn/admin build
 FROM node:22-bookworm-slim AS runner
-ENV NODE_ENV=production PORT=4000
+ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
-COPY --from=api-build --chown=node:node /workspace/apps/api/dist ./dist
+COPY --from=build --chown=node:node /workspace/apps/admin/.next/standalone ./
+COPY --from=build --chown=node:node /workspace/apps/admin/.next/static ./apps/admin/.next/static
 USER node
-EXPOSE 4000
-CMD ["node", "dist/server.mjs"]
+EXPOSE 3000
+CMD ["node", "apps/admin/server.js"]

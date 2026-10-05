@@ -1,0 +1,9 @@
+services:
+  api:
+    environment:
+      NODE_ENV: production
+  admin:
+    environment:
+      NODE_ENV: production
+# This override intentionally keeps production build/start behavior.
+# Add local-only published ports or mock external providers here, not dev servers.

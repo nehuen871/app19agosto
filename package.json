@@ -5,7 +5,11 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @utn/api test",
-    "lint": "eslint apps packages"
+    "lint": "eslint apps packages",
+    "test:security": "pnpm --filter @utn/api test:security",
+    "prod:local": "./scripts/prod-local.sh",
+    "smoke": "./scripts/smoke.sh",
+    "security:check": "./scripts/security-check.sh"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

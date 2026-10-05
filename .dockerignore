@@ -8,3 +8,6 @@
 !.env.example
 **/dist
 **/*.tsbuildinfo
+
+.pnpm-store
+**/src/generated

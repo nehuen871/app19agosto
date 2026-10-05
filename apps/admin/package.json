@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "start": "next start --hostname 0.0.0.0"
   },
   "dependencies": {
     "next": "^16.1.0",
