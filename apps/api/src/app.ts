@@ -1,3 +1,5 @@
+import { pushRouter } from './push';
+import { adminNewsRouter } from './admin-news';
 import { randomUUID } from 'node:crypto';
 import { notificationsRouter } from './notifications';
 import express from 'express';
@@ -28,6 +30,8 @@ export function createApp(db: PrismaClient, options = { adminAccessToken: proces
     next();
   });
   app.use(express.json({ limit: '32kb' }));
+  app.use('/api/v1/push', pushRouter(db));
+  app.use('/api/v1/admin/news', adminNewsRouter(db, options.adminAccessToken));
   app.use('/api/v1/admin/notifications', notificationsRouter(db, options.adminAccessToken));
   app.get('/health/live', (_req, res) => { res.json({ status: 'ok' }); });
   app.get(['/health', '/health/ready'], async (_req, res) => {

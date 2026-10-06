@@ -10,3 +10,9 @@ export interface Notification {
   requestedRecipients: number; sentCount: number; failedCount: number;
   createdAt: string; sentAt: string | null;
 }
+
+export interface NewsInput {
+  title: string; slug: string; summary: string; content: string; category: string;
+  coverImageUrl?: string | null; featured?: boolean; status?: 'DRAFT' | 'PUBLISHED';
+}
+export interface AdminNews extends News { status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' }

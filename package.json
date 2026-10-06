@@ -4,7 +4,8 @@
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @utn/api test",
+    "test": "pnpm --filter @utn/api test && node --test scripts/push-sw.test.mjs",
+    "push:configure": "node scripts/configure-push.mjs",
     "lint": "eslint apps packages",
     "test:security": "pnpm --filter @utn/api test:security",
     "prod:local": "./scripts/prod-local.sh",

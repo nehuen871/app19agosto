@@ -13,6 +13,9 @@ services:
       - ./apps/api/src/server.ts:/workspace/apps/api/src/server.ts:ro
       - ./apps/api/src/notifications.ts:/workspace/apps/api/src/notifications.ts:ro
       - ./apps/api/src/env.ts:/workspace/apps/api/src/env.ts:ro
+      - ./apps/api/src/admin-news.ts:/workspace/apps/api/src/admin-news.ts:ro
+      - ./apps/api/src/admin-auth.ts:/workspace/apps/api/src/admin-auth.ts:ro
+      - ./apps/api/src/push.ts:/workspace/apps/api/src/push.ts:ro
   admin:
     build:
       target: build
@@ -22,3 +25,28 @@ services:
     read_only: false
     volumes:
       - ./apps/admin/app:/workspace/apps/admin/app:ro
+      - ./apps/admin/public:/workspace/apps/admin/public
+      - ./packages/brand-assets:/workspace/packages/brand-assets:ro
+      - ./packages/design-tokens/index.ts:/workspace/packages/design-tokens/index.ts:ro
+
+  mobile:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: build
+    command: [pnpm, --filter, '@utn/mobile', start, --web, --host, lan, --clear]
+    read_only: false
+    environment:
+      NODE_ENV: development
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
+    volumes:
+      - ./apps/mobile/app:/workspace/apps/mobile/app:ro
+      - ./apps/mobile/components:/workspace/apps/mobile/components:ro
+      - ./apps/mobile/services:/workspace/apps/mobile/services:ro
+      - ./apps/mobile/public:/workspace/apps/mobile/public:ro
+      - ./apps/mobile/app.json:/workspace/apps/mobile/app.json:ro
+      - ./packages/brand-assets:/workspace/packages/brand-assets:ro
+      - ./packages/design-tokens/index.ts:/workspace/packages/design-tokens/index.ts:ro
+    networks: [frontend]
+    init: true

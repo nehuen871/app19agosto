@@ -55,6 +55,7 @@ model Notification {
   failedCount Int @default(0)
   createdAt DateTime @default(now())
   sentAt DateTime?
+  deliveries PushDelivery[]
   @@index([createdAt])
   @@index([newsId])
 }
@@ -65,4 +66,28 @@ model AuditLog {
   entityId String
   createdAt DateTime @default(now())
   @@index([entityId])
+}
+
+model PushSubscription {
+  id String @id @default(cuid())
+  endpointHash String @unique
+  subscription Json
+  revokeHash String
+  enabled Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deliveries PushDelivery[]
+  @@index([enabled])
+}
+model PushDelivery {
+  id String @id @default(cuid())
+  notificationId String
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  status String @default("QUEUED")
+  claimedAt DateTime?
+  errorCode String?
+  @@unique([notificationId, subscriptionId])
+  @@index([status])
 }

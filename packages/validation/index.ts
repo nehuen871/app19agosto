@@ -11,3 +11,14 @@ export const notificationQuery = z.object({
   page: z.coerce.number().int().min(1).max(10000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
+
+export const newsInput = z.object({
+  title: z.string().trim().min(1).max(160),
+  slug: slugParam,
+  summary: z.string().trim().min(1).max(500),
+  content: z.string().trim().min(1).max(20000),
+  category: z.string().trim().min(1).max(100).refine(value => /[a-z0-9]/i.test(value.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))),
+  coverImageUrl: z.string().url().refine(value => ['http:', 'https:'].includes(new URL(value).protocol)).nullable().optional(),
+  featured: z.boolean().default(false),
+  status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
+}).strict();

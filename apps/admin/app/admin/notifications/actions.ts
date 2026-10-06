@@ -17,3 +17,12 @@ export async function saveNotification(previous: FormState, data: FormData): Pro
   revalidatePath('/admin/notifications');
   return { ...next, error: '', saved: previous.saved + 1 };
 }
+
+export async function sendNotification(id: string, _previous: { error: string; sent: boolean }, data: FormData) {
+  const api = await requireAdmin();
+  if (data.get('confirm') !== 'on') return { error: 'Confirmá el envío a los dispositivos suscriptos.', sent: false };
+  try { await api.sendNotification(id); }
+  catch (error) { return { error: error instanceof Error ? error.message : 'No se pudo iniciar el envío.', sent: false }; }
+  revalidatePath('/admin/notifications');
+  return { error: '', sent: true };
+}

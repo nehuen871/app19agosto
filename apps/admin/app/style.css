@@ -59,3 +59,6 @@ button:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
 .login-brand { display: flex; justify-content: center; background: var(--header); border-radius: var(--radius-lg); padding: var(--space-md); }
 .editorial-accent { font: var(--editorialAccent-weight) var(--editorialAccent-size)/var(--editorialAccent-height) var(--editorialAccent-font), serif; }
 .alternate-heading { font: var(--alternateHeading-weight) var(--alternateHeading-size)/var(--alternateHeading-height) var(--alternateHeading-font), sans-serif; }
+
+.checkbox-label { display: flex; align-items: center; gap: var(--space-sm); min-height: var(--touch-target); }
+.checkbox-label input { width: auto; min-height: auto; accent-color: var(--primary); }

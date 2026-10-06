@@ -39,3 +39,7 @@ Ver [procedimiento de respaldo y recuperación](docs/operaciones.md). No ejecuta
 ## Identidad visual
 
 El brandbook provisto es de **19 de Agosto**. Logos originales, paleta, tipografías y reglas de integración: [docs/identidad-visual.md](docs/identidad-visual.md). El panel sincroniza sus assets públicos desde `packages/brand-assets/` al iniciar desarrollo o construir; mobile importa los mismos originales.
+
+La app web se sirve también en producción local en `http://localhost:8081`. Usa una exportación de Expo y un proxy a los endpoints públicos de la API en el mismo origen. El panel permite guardar noticias como borrador o publicadas en `/admin`; los borradores quedan fuera de la app y guardar una noticia nunca envía push.
+
+El envío push web se activa con claves VAPID. Generarlas una sola vez con `node scripts/configure-push.mjs mailto:contacto@dominio.com`, luego reconstruir y levantar los contenedores. En la app, pulsar **Activar notificaciones**; en `/admin/notifications`, guardar el borrador, confirmar destinatarios y pulsar **Enviar push**. Ver alcance, configuración y comprobaciones en [docs/notificaciones-push.md](docs/notificaciones-push.md).
