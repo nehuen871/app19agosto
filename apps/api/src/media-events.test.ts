@@ -1,0 +1,72 @@
+import { after, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import { db } from './db';
+import { createApp } from './app';
+import { calendarDays, calendarMonthShift, eventOnDay, googleCalendarUrl } from '../../../packages/api-client/calendar';
+import type { CalendarEvent } from '../../../packages/types';
+const token = randomUUID(), app = createApp(db, { adminAccessToken: token });
+const imageIds: string[] = [], eventIds: string[] = [], newsIds: string[] = [];
+const prefix = 'media-test-' + randomUUID();
+const png = readFileSync(new URL('../../../packages/brand-assets/isotype/brand-isotype.png', import.meta.url));
+after(async () => {
+  await db.auditLog.deleteMany({ where: { entityId: { in: [...imageIds, ...eventIds, ...newsIds] } } });
+  await db.news.deleteMany({ where: { id: { in: newsIds } } });
+  await db.category.deleteMany({ where: { slug: prefix } });
+  await db.mediaImage.deleteMany({ where: { id: { in: imageIds } } });
+  await db.calendarEvent.deleteMany({ where: { id: { in: eventIds } } });
+  await db.$disconnect();
+});
+test('image upload enforces authorization, types, signatures, size and dimensions', async () => {
+  await request(app).post('/api/v1/admin/media').set('Content-Type', 'image/png').send(png).expect(401);
+  for (const type of ['image/svg+xml', 'text/html']) await request(app).post('/api/v1/admin/media').set('Authorization', `Bearer ${token}`).set('Content-Type', type).send('<svg/>').expect(415);
+  await request(app).post('/api/v1/admin/media').set('Authorization', `Bearer ${token}`).set('Content-Type', 'image/png').send(Buffer.from('<script>evil</script>')).expect(400);
+  const enormous = Buffer.from(png); enormous.writeUInt32BE(100000, 16);
+  await request(app).post('/api/v1/admin/media').set('Authorization', `Bearer ${token}`).set('Content-Type', 'image/png').send(enormous).expect(400);
+  await request(app).post('/api/v1/admin/media').set('Authorization', `Bearer ${token}`).set('Content-Type', 'image/png').send(Buffer.alloc(5 * 1024 * 1024 + 1)).expect(413);
+});
+test('uploaded image persists and can be attached to published news and served safely', async () => {
+  const uploaded = await request(app).post('/api/v1/admin/media').set('Authorization', `Bearer ${token}`).set('Content-Type', 'image/png').send(png).expect(201);
+  imageIds.push(uploaded.body.id);
+  const image = await request(app).get(uploaded.body.url).expect(200);
+  assert.equal(image.headers['content-type'], 'image/png'); assert.equal(image.headers['x-content-type-options'], 'nosniff');
+  assert.ok(Buffer.from(image.body).equals(png));
+  const input = { title: 'Imagen persistente', slug: prefix, category: prefix, summary: 'Resumen', content: 'Texto', coverImageId: uploaded.body.id, status: 'PUBLISHED' };
+  const created = await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send(input).expect(201);
+  newsIds.push(created.body.id); assert.equal(created.body.coverImageUrl, uploaded.body.url);
+  const detail = await request(app).get('/api/v1/news/' + prefix).expect(200); assert.equal(detail.body.coverImageUrl, uploaded.body.url);
+  await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send({ ...input, slug: prefix + '-missing', coverImageId: randomUUID() }).expect(400);
+  await request(app).get('/api/v1/media/../../.env').expect(404);
+});
+const input = { title: 'Evento de prueba', description: '<script>Texto literal</script>', location: 'Campus', startsAt: '2030-06-30T23:30:00-03:00', endsAt: '2030-07-01T01:00:00-03:00', color: 'YELLOW', status: 'DRAFT' };
+test('event create/edit is protected and validates dates, colors and mass assignment', async () => {
+  await request(app).get('/api/v1/admin/events').expect(401);
+  await request(app).post('/api/v1/admin/events').send(input).expect(401);
+  await request(app).patch('/api/v1/admin/events/' + randomUUID()).send(input).expect(401);
+  for (const extra of [{ endsAt: input.startsAt }, { startsAt: 'invalid' }, { color: '#ff0000' }, { createdById: 'forged' }, { status: 'DELETED' }]) await request(app).post('/api/v1/admin/events').set('Authorization', `Bearer ${token}`).send({ ...input, ...extra }).expect(400);
+});
+test('calendar includes overlapping events, hides drafts/cancelled and respects Argentine month boundaries', async () => {
+  const created = await request(app).post('/api/v1/admin/events').set('Authorization', `Bearer ${token}`).send(input).expect(201);
+  eventIds.push(created.body.id);
+  const list = async (month: string) => (await request(app).get('/api/v1/events?month=' + month).expect(200)).body.items as CalendarEvent[];
+  assert.ok(!(await list('2030-06')).some(item => item.id === created.body.id));
+  const published = await request(app).patch('/api/v1/admin/events/' + created.body.id).set('Authorization', `Bearer ${token}`).send({ ...input, status: 'PUBLISHED' }).expect(200);
+  assert.equal(published.body.description, input.description);
+  assert.ok((await list('2030-06')).some(item => item.id === created.body.id));
+  assert.ok((await list('2030-07')).some(item => item.id === created.body.id));
+  await request(app).patch('/api/v1/admin/events/' + created.body.id).set('Authorization', `Bearer ${token}`).send({ ...input, status: 'CANCELLED' }).expect(200);
+  assert.ok(!(await list('2030-07')).some(item => item.id === created.body.id));
+  for (const query of ['month=2030-13', 'month=2030-07&limit=100000', 'month=2030-07&page=-1']) await request(app).get('/api/v1/events?' + query).expect(400);
+});
+test('calendar day grid and Google event dates preserve month rollover and midnight exclusions', () => {
+  assert.equal(calendarMonthShift('2026-12', 1), '2027-01'); assert.equal(calendarMonthShift('2027-01', -1), '2026-12');
+  const grid = calendarDays('2028-02'); assert.equal(grid.filter(Boolean).length, 29); assert.equal(grid.length % 7, 0);
+  const event = { ...input, id: randomUUID(), color: 'YELLOW', status: 'PUBLISHED', createdAt: '', updatedAt: '' } as CalendarEvent;
+  assert.equal(eventOnDay(event, '2030-06-30'), true); assert.equal(eventOnDay(event, '2030-07-01'), true);
+  assert.equal(eventOnDay({ ...event, endsAt: '2030-07-01T00:00:00-03:00' }, '2030-07-01'), false);
+  const url = new URL(googleCalendarUrl(event));
+  assert.equal(url.origin, 'https://calendar.google.com'); assert.equal(url.searchParams.get('dates'), '20300701T023000Z/20300701T040000Z');
+  assert.equal(url.searchParams.get('details'), input.description);
+});

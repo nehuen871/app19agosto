@@ -6,7 +6,7 @@ import type { PrismaClient } from './generated/prisma/client';
 
 export function notificationsRouter(db: PrismaClient, accessToken: string | undefined) {
   const router = Router();
-  router.use(adminAuth(accessToken));
+  router.use(adminAuth(accessToken, db));
   router.get('/', async (req, res) => {
     const { page, limit } = notificationQuery.parse(req.query);
     const [items, total] = await db.$transaction([
@@ -28,7 +28,7 @@ export function notificationsRouter(db: PrismaClient, accessToken: string | unde
       const claimed = await tx.notification.updateMany({ where: { id, status: 'DRAFT' }, data: { status: 'QUEUED', requestedRecipients: subscriptions.length } });
       if (!claimed.count) return { error: 'ALREADY_SENT' };
       await tx.pushDelivery.createMany({ data: subscriptions.map(subscription => ({ notificationId: id, subscriptionId: subscription.id })) });
-      await tx.auditLog.create({ data: { actor: 'local-admin', action: 'NOTIFICATION_QUEUED', entityId: id } });
+      await tx.auditLog.create({ data: { actor: res.locals.actor, action: 'NOTIFICATION_QUEUED', entityId: id } });
       return { item: await tx.notification.findUniqueOrThrow({ where: { id }, include: { news: { select: { title: true, slug: true } } } }) };
     });
     if (result.error) {
@@ -48,7 +48,7 @@ export function notificationsRouter(db: PrismaClient, accessToken: string | unde
     }
     const item = await db.$transaction(async tx => {
       const notification = await tx.notification.create({ data, include: { news: { select: { title: true, slug: true } } } });
-      await tx.auditLog.create({ data: { actor: 'local-admin', action: 'NOTIFICATION_CREATED', entityId: notification.id } });
+      await tx.auditLog.create({ data: { actor: res.locals.actor, action: 'NOTIFICATION_CREATED', entityId: notification.id } });
       return notification;
     });
     res.status(201).json(item);

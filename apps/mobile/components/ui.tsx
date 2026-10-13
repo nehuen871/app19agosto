@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Metro requires static asset paths. */
 import { Image, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { PropsWithChildren } from 'react';
-import { colors, spacing, radius, typography, layout, interaction, brandMark } from '@utn/design-tokens';
+import { colors, spacing, radius, typography, layout, interaction, brandMark, calendarColors, calendarLayout } from '@utn/design-tokens';
+import type { EventColor } from '@utn/api-client';
 const theme = colors.light;
 
 export function BrandMark({ variant = 'logo' }: { variant?: 'logo' | 'isologo' }) {
@@ -11,8 +12,8 @@ export function BrandMark({ variant = 'logo' }: { variant?: 'logo' | 'isologo' }
     </View>
   </View>;
 }
-export function Card({ children, featured = false }: PropsWithChildren<{ featured?: boolean }>) {
-  return <View style={[styles.card, featured && styles.featured]}>{children}</View>;
+export function Card({ children, featured = false, accent }: PropsWithChildren<{ featured?: boolean; accent?: EventColor }>) {
+  return <View style={[styles.card, featured && styles.featured, accent && { borderLeftWidth: spacing.xs, borderLeftColor: calendarColors[accent].background }]}>{children}</View>;
 }
 export function Heading({ children, level = 1 }: PropsWithChildren<{ level?: 1 | 2 | 3 }>) {
   return <Text accessibilityRole="header" style={[styles.heading, typography[`heading${level}`]]}>{children}</Text>;
@@ -37,6 +38,12 @@ export function LoadingIndicator({ title = 'Cargando noticias…' }: { title?: s
 }
 export const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: theme.background },
+  section: { gap: spacing.lg },
+  navigation: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', minWidth: calendarLayout.minWidth },
+  calendarCell: { width: `${calendarLayout.columnPercent}%`, minHeight: layout.touchTarget, padding: spacing.xs, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border, gap: spacing.xs },
+  calendarSelected: { borderColor: theme.primary, backgroundColor: theme.secondary },
+  calendarDot: { width: spacing.sm, height: spacing.sm, borderRadius: radius.full },
   content: { padding: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: layout.readingMax, alignSelf: 'center' },
   state: { padding: spacing.lg, gap: spacing.md, backgroundColor: theme.background },
   brandMark: { paddingHorizontal: brandMark.safeAreaHorizontal, paddingVertical: brandMark.safeAreaVertical },
@@ -45,7 +52,7 @@ export const styles = StyleSheet.create({
   isologoImage: { width: '100%', height: '100%' },
   logoViewport: { width: brandMark.logoWidth, height: brandMark.logoHeight, overflow: 'hidden' },
   logoImage: { position: 'absolute', width: brandMark.logoCanvasSize, height: brandMark.logoCanvasSize, top: brandMark.logoOffsetY },
-  card: { backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderColor: theme.border },
+  card: { width: '100%', backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderColor: theme.border },
   featured: { backgroundColor: theme.editorial },
   heading: { color: theme.foreground },
   body: { ...typography.body, color: theme.foreground },

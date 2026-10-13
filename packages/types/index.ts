@@ -14,5 +14,17 @@ export interface Notification {
 export interface NewsInput {
   title: string; slug: string; summary: string; content: string; category: string;
   coverImageUrl?: string | null; featured?: boolean; status?: 'DRAFT' | 'PUBLISHED';
+  coverImageId?: string | null;
 }
 export interface AdminNews extends News { status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' }
+
+export type EventColor = 'BLUE' | 'YELLOW' | 'LIGHT_BLUE' | 'CYAN_GRAY';
+export interface EventInput {
+  title: string; description: string; location: string; startsAt: string; endsAt: string;
+  color: EventColor; status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED';
+}
+export interface CalendarEvent extends EventInput { id: string; createdAt: string; updatedAt: string }
+export interface MediaImage { id: string; url: string }
+export interface AuthUser { id: string; name: string; email: string; role: 'USER' | 'ADMIN' }
+export interface AuthSessionInfo { user: AuthUser; expiresAt: string }
+export interface GoogleLoginConfig { enabled: boolean; startUrl: string | null }

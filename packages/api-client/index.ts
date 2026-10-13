@@ -1,6 +1,12 @@
-import type { Category, News, Page, Notification, NotificationDraft, NewsInput, AdminNews } from '@utn/types';
+import type { Category, News, Page, Notification, NotificationDraft, NewsInput, AdminNews, CalendarEvent, EventInput, MediaImage } from '@utn/types';
+export * from './calendar';
+export * from './auth';
+export type { CalendarEvent, EventInput, EventColor } from '@utn/types';
 
 export function createApiClient(baseUrl: string) {
+  function cover(news: News): News {
+    return news.coverImageUrl?.startsWith('/api/v1/media/') && /^https?:\/\//.test(baseUrl) ? { ...news, coverImageUrl: new URL(news.coverImageUrl, baseUrl).href } : news;
+  }
   async function get<T>(path: string): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -19,9 +25,11 @@ export function createApiClient(baseUrl: string) {
   }
 
   return {
-    news: (page = 1) => get<Page<News>>(`/news?page=${page}`),
-    detail: (slug: string) => get<News>(`/news/${encodeURIComponent(slug)}`),
+    news: async (page = 1) => { const data = await get<Page<News>>(`/news?page=${page}`); return { ...data, items: data.items.map(cover) }; },
+    detail: async (slug: string) => cover(await get<News>(`/news/${encodeURIComponent(slug)}`)),
     categories: () => get<Category[]>('/categories'),
+    events: (month: string, page = 1) => get<Page<CalendarEvent>>(`/events?month=${encodeURIComponent(month)}&page=${page}`),
+    googleCalendarConfig: () => get<{ enabled: boolean; startUrl: string | null }>('/google-calendar/config'),
   };
 }
 
@@ -29,9 +37,9 @@ export type { News } from '@utn/types';
 
 // Only call this client from the admin server; credentials never reach client JS.
 export function createAdminApiClient(baseUrl: string, accessToken: string) {
-  async function request<T>(path: string, payload?: NotificationDraft | NewsInput | Record<string, never>, resource = 'notifications'): Promise<T> {
+  async function request<T>(path: string, payload?: NotificationDraft | NewsInput | EventInput | Record<string, never>, resource = 'notifications', method = payload ? 'POST' : 'GET'): Promise<T> {
     const response = await fetch(`${baseUrl}/admin/${resource}${path}`, {
-      method: payload ? 'POST' : 'GET',
+      method,
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: payload ? JSON.stringify(payload) : undefined,
       cache: 'no-store', signal: AbortSignal.timeout(10000),
@@ -44,12 +52,20 @@ export function createAdminApiClient(baseUrl: string, accessToken: string) {
         throw new Error('No se pudo iniciar el envío. Revisá la configuración e intentá nuevamente.');
       }
       if (response.status === 409) throw new Error('Ya existe una noticia con ese identificador. Elegí otro.');
-      if (response.status === 400) throw new Error(resource === 'news' ? 'Revisá el título, identificador, categoría, resumen, contenido e imagen.' : 'Revisá el título, el mensaje y la noticia elegida.');
+      if (response.status === 400) throw new Error(resource === 'news' ? 'Revisá el título, identificador, categoría, resumen, contenido e imagen.' : resource === 'events' ? 'Revisá el título, las fechas, el color y el estado del evento.' : 'Revisá el título, el mensaje y la noticia elegida.');
       throw new Error('No se pudo completar la solicitud. Intentá nuevamente.');
     }
     return response.json() as Promise<T>;
   }
   return {
+    events: (page = 1) => request<Page<CalendarEvent>>(`?page=${page}`, undefined, 'events'),
+    createEvent: (data: EventInput) => request<CalendarEvent>('', data, 'events'),
+    updateEvent: (id: string, data: EventInput) => request<CalendarEvent>(`/${encodeURIComponent(id)}`, data, 'events', 'PATCH'),
+    uploadImage: async (file: File): Promise<MediaImage> => {
+      const response = await fetch(`${baseUrl}/admin/media`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': file.type }, body: await file.arrayBuffer(), signal: AbortSignal.timeout(20000) });
+      if (!response.ok) throw new Error('No pudimos subir la imagen. Usá PNG o JPEG de hasta 5 MB y 4096 px / 12 megapíxeles.');
+      return response.json();
+    },
     news: (page = 1) => request<Page<AdminNews>>(`?page=${page}`, undefined, 'news'),
     createNews: (data: NewsInput) => request<AdminNews>('', data, 'news'),
     sendNotification: (id: string) => request<Notification>(`/${encodeURIComponent(id)}/send`, {}),

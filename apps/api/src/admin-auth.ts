@@ -1,7 +1,16 @@
+import { findSession } from './auth';
+import type { PrismaClient } from './generated/prisma/client';
 import { timingSafeEqual } from 'node:crypto';
 import type { RequestHandler } from 'express';
-export function adminAuth(accessToken: string | undefined): RequestHandler {
-  return (req, res, next) => {
+export function adminAuth(accessToken: string | undefined, db?: PrismaClient): RequestHandler {
+  return async (req, res, next) => {
+    const token = req.get('authorization')?.replace(/^Bearer /, '');
+    if (db && token?.startsWith('utn_s_')) {
+      const session = await findSession(db, token, 'ADMIN');
+      if (!session) { res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Se requiere acceso administrativo.', details: [] } }); return; }
+      res.locals.actor = session.accountId;
+      next(); return;
+    }
     const supplied = Buffer.from(req.get('authorization') ?? '');
     const expected = Buffer.from(`Bearer ${accessToken ?? ''}`);
     if (!accessToken || accessToken.length < 32) {
@@ -12,6 +21,7 @@ export function adminAuth(accessToken: string | undefined): RequestHandler {
       res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Se requiere acceso administrativo.', details: [] } });
       return;
     }
+    res.locals.actor = 'local-admin';
     next();
   };
 }

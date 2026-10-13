@@ -3,7 +3,6 @@
 **/.next
 **/.expo
 .env
-19Agosto
 .env.*
 !.env.example
 **/dist

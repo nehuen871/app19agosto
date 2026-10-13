@@ -43,3 +43,7 @@ El brandbook provisto es de **19 de Agosto**. Logos originales, paleta, tipograf
 La app web se sirve también en producción local en `http://localhost:8081`. Usa una exportación de Expo y un proxy a los endpoints públicos de la API en el mismo origen. El panel permite guardar noticias como borrador o publicadas en `/admin`; los borradores quedan fuera de la app y guardar una noticia nunca envía push.
 
 El envío push web se activa con claves VAPID. Generarlas una sola vez con `node scripts/configure-push.mjs mailto:contacto@dominio.com`, luego reconstruir y levantar los contenedores. En la app, pulsar **Activar notificaciones**; en `/admin/notifications`, guardar el borrador, confirmar destinatarios y pulsar **Enviar push**. Ver alcance, configuración y comprobaciones en [docs/notificaciones-push.md](docs/notificaciones-push.md).
+
+Las noticias admiten imágenes subidas desde el admin y se muestran en una columna. El módulo `/calendar` muestra eventos configurables en `/admin/events`. La integración con Google Calendar y sus credenciales OAuth están documentadas en [docs/calendario-imagenes.md](docs/calendario-imagenes.md).
+
+El login con Google de la app (`/account`) y del admin usa sesiones separadas. Configuración de credenciales, correos autorizados y compilaciones móviles: [docs/login-google.md](docs/login-google.md).

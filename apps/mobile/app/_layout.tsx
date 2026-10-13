@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { brand, colors, typography, spacing } from '@utn/design-tokens';
 import { BrandMark, styles } from '../components/ui';
+import { AuthProvider } from '../services/auth';
 const client = new QueryClient();
 
 export default function Layout() {
@@ -18,12 +19,12 @@ export default function Layout() {
   });
   if (error) return <View style={{ padding: spacing.lg, backgroundColor: colors.light.background }}><Text accessibilityRole="alert" style={{ color: colors.light.error }}>No pudimos cargar la presentación. Cerrá y volvé a abrir la app.</Text></View>;
   if (!loaded) return <View style={styles.launch}><StatusBar style="light" /><BrandMark variant="isologo" /><ActivityIndicator color={colors.light.headerForeground} accessibilityLabel="Preparando la app…" /></View>;
-  return <QueryClientProvider client={client}>
+  return <QueryClientProvider client={client}><AuthProvider>
     <StatusBar style="light" />
     <Stack screenOptions={{
       title: 'UTN FRBA', headerTitle: () => <BrandMark />, headerTitleAlign: 'left',
       headerStyle: { backgroundColor: colors.light.header }, headerTintColor: colors.light.headerForeground,
       headerTitleStyle: typography.label, contentStyle: { backgroundColor: colors.light.background },
     }} />
-  </QueryClientProvider>;
+  </AuthProvider></QueryClientProvider>;
 }

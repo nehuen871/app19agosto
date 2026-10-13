@@ -53,6 +53,13 @@ export const typography = {
 // Layout caps preserve reading length on desktop/tablets; touch targets meet 48px.
 export const layout = { contentMax: 1152, readingMax: 768, touchTarget: 48, coverAspect: 16 / 9 };
 export const interaction = { pressedOpacity: 0.85, disabledOpacity: 0.55 };
+export const calendarColors = {
+  BLUE: { background: brand.colors.blue, foreground: white, label: 'Azul' },
+  YELLOW: { background: brand.colors.yellow, foreground: brand.colors.black, label: 'Amarillo' },
+  LIGHT_BLUE: { background: brand.colors.lightBlue, foreground: brand.colors.black, label: 'Celeste' },
+  CYAN_GRAY: { background: brand.colors.cyanGray, foreground: brand.colors.black, label: 'Verde grisáceo' },
+} as const;
+export const calendarLayout = { columns: 7, columnPercent: 100 / 7, minWidth: layout.touchTarget * 7 };
 
 /** Display geometry of the original 500px PNGs, without altering their pixels.
  * The logo viewport only removes transparent top/bottom padding (y=206..302).

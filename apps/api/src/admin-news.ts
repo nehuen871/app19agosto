@@ -4,7 +4,7 @@ import { adminAuth } from './admin-auth';
 import type { PrismaClient } from './generated/prisma/client';
 export function adminNewsRouter(db: PrismaClient, token: string | undefined) {
   const router = Router();
-  router.use(adminAuth(token));
+  router.use(adminAuth(token, db));
   router.get('/', async (req, res) => {
     const { page, limit } = newsQuery.parse(req.query);
     const [items, total] = await db.$transaction([
@@ -14,14 +14,17 @@ export function adminNewsRouter(db: PrismaClient, token: string | undefined) {
     res.json({ items, total, page, limit });
   });
   router.post('/', async (req, res, next) => {
-    const { category: name, ...data } = newsInput.parse(req.body);
+    const { category: name, coverImageId, ...data } = newsInput.parse(req.body);
+    if (coverImageId && !await db.mediaImage.findUnique({ where: { id: coverImageId }, select: { id: true } })) {
+      res.status(400).json({ error: { code: 'INVALID_IMAGE', message: 'Volvé a subir la imagen elegida.', details: [] } }); return;
+    }
     const categorySlug = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     try {
       const item = await db.$transaction(async tx => {
         const category = await tx.category.upsert({ where: { slug: categorySlug }, create: { name, slug: categorySlug }, update: {} });
-        const news = await tx.news.create({ data: { ...data, categoryId: category.id, publishedAt: data.status === 'PUBLISHED' ? new Date() : null }, include: { category: true } });
-        await tx.auditLog.create({ data: { actor: 'local-admin', action: 'NEWS_CREATED', entityId: news.id } });
-        if (data.status === 'PUBLISHED') await tx.auditLog.create({ data: { actor: 'local-admin', action: 'NEWS_PUBLISHED', entityId: news.id } });
+        const news = await tx.news.create({ data: { ...data, coverImageId, ...(coverImageId ? { coverImageUrl: `/api/v1/media/${coverImageId}` } : {}), categoryId: category.id, publishedAt: data.status === 'PUBLISHED' ? new Date() : null }, include: { category: true } });
+        await tx.auditLog.create({ data: { actor: res.locals.actor, action: 'NEWS_CREATED', entityId: news.id } });
+        if (data.status === 'PUBLISHED') await tx.auditLog.create({ data: { actor: res.locals.actor, action: 'NEWS_PUBLISHED', entityId: news.id } });
         return news;
       });
       res.status(201).json(item);

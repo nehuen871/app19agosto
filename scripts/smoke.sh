@@ -9,13 +9,22 @@ for service in api admin mobile; do
     curl -fsS "http://$address/health/ready" >/dev/null
     curl -fsS "http://$address/api/v1/news?limit=1" >/dev/null
     curl -fsS "http://$address/api/v1/push/config" >/dev/null
+    curl -fsS "http://$address/api/v1/events?month=$(date +%Y-%m)&limit=1" >/dev/null
+    curl -fsS "http://$address/api/v1/google-calendar/config" >/dev/null
+    curl -fsS "http://$address/api/v1/auth/config" >/dev/null
   elif [ "$service" = mobile ]; then
     curl -fsS "http://$address/" >/dev/null
     curl -fsS "http://$address/api/v1/news?limit=1" >/dev/null
     curl -fsS "http://$address/api/v1/push/config" >/dev/null
     curl -fsS "http://$address/push-sw.js" >/dev/null
+    curl -fsS "http://$address/calendar" >/dev/null
+    curl -fsS "http://$address/account" >/dev/null
+    curl -fsS "http://$address/api/v1/events?month=$(date +%Y-%m)&limit=1" >/dev/null
+    curl -fsS "http://$address/api/v1/google-calendar/config" >/dev/null
+    curl -fsS "http://$address/api/v1/auth/config" >/dev/null
   else
     curl -fsS "http://$address/admin/login" >/dev/null
+    curl -fsS "http://$address/admin/oauth/config" >/dev/null
   fi
 done
 echo "Smoke tests OK"

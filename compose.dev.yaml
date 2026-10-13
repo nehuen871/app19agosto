@@ -14,8 +14,12 @@ services:
       - ./apps/api/src/notifications.ts:/workspace/apps/api/src/notifications.ts:ro
       - ./apps/api/src/env.ts:/workspace/apps/api/src/env.ts:ro
       - ./apps/api/src/admin-news.ts:/workspace/apps/api/src/admin-news.ts:ro
+      - ./apps/api/src/auth.ts:/workspace/apps/api/src/auth.ts:ro
       - ./apps/api/src/admin-auth.ts:/workspace/apps/api/src/admin-auth.ts:ro
       - ./apps/api/src/push.ts:/workspace/apps/api/src/push.ts:ro
+      - ./apps/api/src/media.ts:/workspace/apps/api/src/media.ts:ro
+      - ./apps/api/src/events.ts:/workspace/apps/api/src/events.ts:ro
+      - ./apps/api/src/google-calendar.ts:/workspace/apps/api/src/google-calendar.ts:ro
   admin:
     build:
       target: build
