@@ -1,7 +1,8 @@
+import { apiUrl } from './environment';
 import 'server-only';
 // Fixed upstream routes: this is not a general authenticated API proxy.
 export async function googleOAuth(request: Request, route: 'config' | 'start' | 'callback') {
-  const url = new URL(`${process.env.API_URL ?? 'http://api:4000/api/v1'}/auth/${route === 'config' ? 'config' : 'google/' + route}`);
+  const url = new URL(`${apiUrl}/auth/${route === 'config' ? 'config' : 'google/' + route}`);
   url.searchParams.set('purpose', 'admin');
   if (route === 'callback') {
     const incoming = new URL(request.url);

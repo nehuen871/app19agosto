@@ -14,7 +14,7 @@ const fetcher: typeof fetch = async (input, init) => {
   assert.ok(url.startsWith('https://www.googleapis.com/calendar/v3/calendars/primary/events'));
   return Response.json({}, { status: insertStatus });
 };
-const app = createApp(db, { adminAccessToken: randomUUID(), googleFetch: fetcher });
+const app = createApp(db, { googleFetch: fetcher });
 before(async () => {
   process.env.GOOGLE_CLIENT_ID = 'test-client'; process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
   process.env.GOOGLE_REDIRECT_URI = 'http://localhost:8081/api/v1/google-calendar/callback'; process.env.APP_PUBLIC_URL = 'http://localhost:8081';

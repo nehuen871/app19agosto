@@ -14,7 +14,8 @@ FROM deps AS build
 COPY . .
 RUN DATABASE_URL=postgresql://build:build@localhost/build pnpm --filter @utn/api exec prisma generate
 FROM build AS mobile-build
-ENV EXPO_PUBLIC_API_URL=/api/v1
+ARG EXPO_PUBLIC_WEB_API_URL=/api/v1
+ENV EXPO_PUBLIC_WEB_API_URL=$EXPO_PUBLIC_WEB_API_URL
 RUN pnpm --filter @utn/mobile export:web
 RUN node scripts/build-mobile-server.mjs
 FROM node:22-bookworm-slim AS runner

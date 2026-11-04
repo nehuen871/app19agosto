@@ -15,4 +15,4 @@ Verificación:
 - Chrome, con una base aislada: login → guardar noticia publicada → verla en la app → abrir detalle por URL. Además se comprobó el render de la app operativa.
 - No se modificó el esquema ni se borraron volúmenes operativos.
 
-Acceso local: panel `http://localhost:3001/admin`, app web `http://localhost:8081`. La clave administrativa sigue siendo `ADMIN_ACCESS_TOKEN` configurada por el operador. La autenticación institucional y los roles completos continúan fuera de esta corrección. No se ejecutó un build nativo iOS/Android.
+Acceso local: panel `http://localhost:3001/admin`, app web `http://localhost:8081`. El ingreso administrativo actual es únicamente por Google con cuenta autorizada; el ingreso por clave fue eliminado. No se ejecutó un build nativo iOS/Android.

@@ -7,7 +7,7 @@ import type { PrismaClient } from './generated/prisma/client';
 
 const unavailable = { $queryRaw: async () => { throw new Error('database-secret'); } } as unknown as PrismaClient;
 const token = 'a'.repeat(32);
-function app() { return createApp(unavailable, { adminAccessToken: token }); }
+function app() { return createApp(unavailable); }
 
 test('liveness survives unavailable database and readiness fails without leaking errors', async () => {
   await request(app()).get('/health/live').expect(200);
@@ -46,11 +46,11 @@ test('rejects pagination abuse and injection values', async () => {
   }
 });
 test('validates startup settings without echoing secret values', () => {
-  assert.throws(() => readEnvironment({ DATABASE_URL: 'secret-invalid', ADMIN_ACCESS_TOKEN: 'secret-short' }), error => error instanceof Error && !error.message.includes('secret-'));
-  const env = readEnvironment({ DATABASE_URL: 'postgresql://user:pass@db:5432/app', ADMIN_ACCESS_TOKEN: token });
+  assert.throws(() => readEnvironment({ DATABASE_URL: 'secret-invalid' }), error => error instanceof Error && !error.message.includes('secret-'));
+  const env = readEnvironment({ DATABASE_URL: 'postgresql://user:pass@db:5432/app' });
   assert.equal(env.PORT, 4000);
   assert.equal(env.DB_POOL_MAX, 10);
   for (const values of [{ PORT: '0' }, { DB_POOL_MAX: '101' }, { CORS_ORIGINS: '*' }]) {
-    assert.throws(() => readEnvironment({ DATABASE_URL: 'postgresql://user:pass@db:5432/app', ADMIN_ACCESS_TOKEN: token, ...values }));
+    assert.throws(() => readEnvironment({ DATABASE_URL: 'postgresql://user:pass@db:5432/app', ...values }));
   }
 });

@@ -1,11 +1,12 @@
+import { createTestAdmin, removeTestAdmin, testAdminToken } from './test-admin';
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { db } from './db';
 import { createApp } from './app';
-const token = randomUUID();
-const app = createApp(db, { adminAccessToken: token });
+const token = testAdminToken();
+const app = createApp(db);
 const auth = `Bearer ${token}`;
 const prefix = `test-${randomUUID()}`;
 const created: string[] = [];
@@ -18,17 +19,19 @@ before(async () => {
     if (status === 'PUBLISHED') newsId = news.id; else draftId = news.id;
   }
 });
+before(async () => { await createTestAdmin(db, token); });
 after(async () => {
   await db.auditLog.deleteMany({ where: { entityId: { in: created } } });
   await db.notification.deleteMany({ where: { id: { in: created } } });
   if (categoryId) { await db.news.deleteMany({ where: { categoryId } }); await db.category.delete({ where: { id: categoryId } }); }
+  await removeTestAdmin(db, token);
   await db.$disconnect();
 });
 test('requires admin credentials for reading and creating notifications', async () => {
   await request(app).get('/api/v1/admin/notifications').expect(401);
   await request(app).post('/api/v1/admin/notifications').send({ title: 'Test', body: 'Test' }).expect(401);
   await request(app).get('/api/v1/admin/notifications').set('Authorization', 'Bearer wrong').expect(401);
-  await request(createApp(db, { adminAccessToken: undefined })).get('/api/v1/admin/notifications').expect(503);
+  await request(createApp(db)).get('/api/v1/admin/notifications').expect(401);
 });
 test('saves drafts and audit atomically, links published news and never sends implicitly', async () => {
   const response = await request(app).post('/api/v1/admin/notifications').set('Authorization', auth).send({ title: '  Aviso  ', body: ' Mensaje ', newsId }).expect(201);
@@ -39,7 +42,7 @@ test('saves drafts and audit atomically, links published news and never sends im
   assert.equal(response.body.sentAt, null);
   const audit = await db.auditLog.findFirstOrThrow({ where: { entityId: response.body.id } });
   assert.equal(audit.action, 'NOTIFICATION_CREATED');
-  assert.equal(audit.actor, 'local-admin');
+  assert.equal(audit.actor, (await db.account.findUniqueOrThrow({ where: { googleSubject: (await import('./auth')).hashToken(token) } })).id);
   const page = await request(app).get('/api/v1/admin/notifications?limit=100').set('Authorization', auth).expect(200);
   assert.ok(page.body.items.some((item: { id: string }) => item.id === response.body.id));
 });

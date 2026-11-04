@@ -1,6 +1,7 @@
-import { View } from 'react-native';
-import { router } from 'expo-router';
-import { Button, styles } from './ui';
+import { Pressable, Text, View } from 'react-native';
+import { Link } from 'expo-router';
+import { styles } from './ui';
 export function AppNavigation({ current }: { current: 'news' | 'calendar' | 'account' }) {
-  return <View style={styles.navigation}><Button title="Noticias" variant={current === 'news' ? 'primary' : 'secondary'} onPress={() => router.push('/')} /><Button title="Calendario" variant={current === 'calendar' ? 'primary' : 'secondary'} onPress={() => router.push('/calendar')} /><Button title="Mi cuenta" variant={current === 'account' ? 'primary' : 'secondary'} onPress={() => router.push('/account')} /></View>;
+  const destinations = [{ key: 'news', href: '/', title: 'Noticias' }, { key: 'calendar', href: '/calendar', title: 'Calendario' }, { key: 'account', href: '/account', title: 'Mi cuenta' }] as const;
+  return <View style={styles.navigation}>{destinations.map(item => <Link key={item.key} href={item.href} replace asChild><Pressable accessibilityRole="link" accessibilityState={{ selected: current === item.key }} disabled={current === item.key} style={({ pressed }) => [styles.button, current !== item.key && styles.buttonSecondary, pressed && styles.pressed]}><Text style={[styles.buttonText, current !== item.key && styles.buttonSecondaryText]}>{item.title}</Text></Pressable></Link>)}</View>;
 }

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { eventInput, eventQuery, notificationQuery } from '@utn/validation';
 import { adminAuth } from './admin-auth';
 import type { PrismaClient } from './generated/prisma/client';
-export function eventsRouter(db: PrismaClient, token: string | undefined) {
+export function eventsRouter(db: PrismaClient) {
   const router = Router();
   router.get('/events', async (req, res) => {
     const { month, page, limit } = eventQuery.parse(req.query);
@@ -17,7 +17,7 @@ export function eventsRouter(db: PrismaClient, token: string | undefined) {
     ]);
     res.json({ items, total, page, limit });
   });
-  router.use('/admin/events', adminAuth(token, db));
+  router.use('/admin/events', adminAuth(db));
   router.get('/admin/events', async (req, res) => {
     const { page, limit } = notificationQuery.parse(req.query);
     const [items, total] = await db.$transaction([

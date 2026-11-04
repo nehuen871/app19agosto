@@ -1,4 +1,5 @@
-const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+import { apiUrl } from './environment';
+const baseUrl = apiUrl;
 export const pushStorageKey = 'utn-push-subscription';
 export interface PushConfig { enabled: boolean; publicKey: string | null }
 export interface PushCapability { id: string; revokeToken: string }

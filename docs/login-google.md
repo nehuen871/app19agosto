@@ -1,6 +1,6 @@
 # Login con Google: app y admin
 
-La app tiene una pantalla **Mi cuenta**. El admin ofrece **Continuar con Google** y mantiene el ingreso por clave. Noticias y calendario siguen siendo públicos.
+La app tiene una pantalla **Mi cuenta**. El admin ofrece **Continuar con Google** como único método de ingreso. La app solicita ingresar con Google antes de mostrar cualquier sección: noticias, detalle, calendario y cuenta. Sin sesión, la única pantalla accesible es el ingreso. Este requisito de navegación no convierte las noticias en contenido confidencial: los endpoints de lectura de noticias de la API siguen siendo públicos.
 
 ## Configuración
 
@@ -25,7 +25,7 @@ ADMIN_GOOGLE_EMAILS=19deagosto.utn@gmail.com
 
 Los dominios y correos del ejemplo deben reemplazarse por los reales. Las listas admiten comas; los dominios coinciden exactamente, sin comodines ni subdominios implícitos. Por defecto, la app requiere un dominio configurado. Para permitir cualquier cuenta de Google con correo verificado, usar `GOOGLE_APP_ACCESS=verified`. El admin siempre requiere un correo completo en `ADMIN_GOOGLE_EMAILS`; una lista vacía deshabilita su login con Google. Ningún usuario obtiene acceso administrativo por ser el primero en registrarse.
 
-En producción, los orígenes deben usar HTTPS. Agregar ambos a `CORS_ORIGINS` si hay clientes que llaman directamente a la API. Nunca colocar `GOOGLE_CLIENT_SECRET` ni `ADMIN_ACCESS_TOKEN` en variables `EXPO_PUBLIC_*`.
+En producción, los orígenes deben usar HTTPS. Agregar ambos a `CORS_ORIGINS` si hay clientes que llaman directamente a la API. Nunca colocar `GOOGLE_CLIENT_SECRET` en variables `EXPO_PUBLIC_*`.
 
 ```sh
 docker compose -f compose.yaml -f compose.prod-local.yaml build api admin mobile migrate
@@ -58,3 +58,7 @@ Validación local realizada el 7 de octubre de 2026: TypeScript y lint aprobados
 La auditoría de dependencias sigue fallando por 4 vulnerabilidades altas y 3 moderadas preexistentes. No se validó OAuth con una cuenta real por falta de credenciales ni se ejecutó la app en dispositivos. El escaneo de imágenes requiere autenticación de Docker Scout y sigue pendiente. Estas comprobaciones pendientes impiden considerar aprobada la preparación completa para producción.
 
 La cuenta administrativa configurada es `19deagosto.utn@gmail.com`. Administra noticias, imágenes, eventos y notificaciones. Los demás usuarios acceden a las vistas públicas de noticias y calendario y pueden aceptar eventos; no pueden cargar contenido ni enviar notificaciones. El inicio de sesión con Google ocurre en Google y no requiere guardar la contraseña de ese correo en la aplicación. Para habilitarlo siguen siendo necesarias las credenciales del cliente OAuth.
+
+El acceso a la app usa `Stack.Protected` de Expo Router y reutiliza `GoogleLoginCard`. Antes de resolver la sesión inicial, el layout muestra una pantalla de espera. Sin sesión no se montan las pantallas ni las consultas de noticias o calendario. Al cerrar sesión se elimina la caché de la app y las rutas protegidas salen del historial. El callback web exitoso y el ingreso nativo llevan al listado. Los errores de configuración, conexión o autorización conservan la posibilidad de reintentar.
+
+El panel y la API administrativa aceptan únicamente sesiones de Google con propósito ADMIN, cuenta activa, rol ADMIN y correo autorizado. No existe ingreso alternativo por clave compartida ni cookies locales firmadas.

@@ -1,14 +1,17 @@
+import { apiUrl } from './environment';
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { AuthRequestError, createAuthApiClient, type AuthUser, type GoogleLoginConfig } from '@utn/api-client';
 
-const api = createAuthApiClient(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1');
+const api = createAuthApiClient(apiUrl);
 const storageKey = 'utn.google.session';
 const returnUrl = 'utnfrba://account';
-type AuthState = { user: AuthUser | null; busy: boolean; error: string; refresh: () => Promise<void>; login: (config: GoogleLoginConfig) => Promise<void>; logout: () => Promise<void> };
+type AuthState = { user: AuthUser | null; ready: boolean; busy: boolean; error: string; refresh: () => Promise<void>; login: (config: GoogleLoginConfig) => Promise<void>; logout: () => Promise<void> };
 const AuthContext = createContext<AuthState | null>(null);
 function base64url(bytes: Uint8Array) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -18,6 +21,9 @@ function base64url(bytes: Uint8Array) {
   return output;
 }
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
+  function clearAppCache() { queryClient.clear(); }
+  const [ready, setReady] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null), [token, setToken] = useState<string | null>(null), [busy, setBusy] = useState(true), [error, setError] = useState('');
   async function refresh() {
     setBusy(true); setError('');
@@ -27,10 +33,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const session = await api.me(saved); setUser(session.user);
     } catch (cause) {
       if (cause instanceof AuthRequestError && cause.status === 401) {
-        setUser(null); setToken(null);
+        setUser(null); setToken(null); clearAppCache();
         if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(storageKey);
       } else setError('No pudimos consultar tu sesión. Revisá tu conexión y reintentá.');
-    } finally { setBusy(false); }
+    } finally { setReady(true); setBusy(false); }
   }
   useEffect(() => { void refresh(); }, []);
   async function login(config: GoogleLoginConfig) {
@@ -48,16 +54,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const ticket = incoming.searchParams.get('ticket'); if (!ticket) throw new Error('ticket');
       const session = await api.exchange(ticket, verifier);
       await SecureStore.setItemAsync(storageKey, session.token);
-      setToken(session.token); setUser(session.user);
+      setToken(session.token); setUser(session.user); router.replace('/');
     } catch { setError('No pudimos iniciar sesión. Revisá tu conexión e intentá nuevamente.'); }
     finally { setBusy(false); }
   }
   async function logout() {
     setBusy(true); setError('');
-    try { await api.logout(token); if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(storageKey); setToken(null); setUser(null); }
+    try { await api.logout(token); if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(storageKey); setToken(null); setUser(null); clearAppCache(); }
     catch { setError('No pudimos cerrar la sesión. Revisá tu conexión y reintentá.'); }
     finally { setBusy(false); }
   }
-  return <AuthContext.Provider value={{ user, busy, error, refresh, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, ready, busy, error, refresh, login, logout }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() { const value = useContext(AuthContext); if (!value) throw new Error('AuthProvider required'); return value; }

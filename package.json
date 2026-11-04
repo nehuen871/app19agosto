@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @utn/api test && node --test scripts/push-sw.test.mjs",
+    "test": "pnpm --filter @utn/api test && node --test scripts/push-sw.test.mjs scripts/expo-environment.test.mjs && tsx --test packages/api-client/cancellation.test.ts",
     "push:configure": "node scripts/configure-push.mjs",
     "lint": "eslint apps packages",
     "test:security": "pnpm --filter @utn/api test:security",

@@ -34,9 +34,9 @@ export function validImage(bytes: Buffer, mime: string) {
   } else return false;
   return width > 0 && height > 0 && width <= 4096 && height <= 4096 && width * height <= 12000000;
 }
-export function mediaRouter(db: PrismaClient, token: string | undefined) {
+export function mediaRouter(db: PrismaClient) {
   const router = Router();
-  router.post('/admin/media', adminAuth(token, db), (req, res, next) => {
+  router.post('/admin/media', adminAuth(db), (req, res, next) => {
     if (!req.is(['image/png', 'image/jpeg'])) { res.status(415).json({ error: { code: 'IMAGE_TYPE', message: 'Elegí una imagen PNG o JPEG.', details: [] } }); return; }
     next();
   }, express.raw({ type: ['image/png', 'image/jpeg'], limit: imageLimit }), async (req, res) => {

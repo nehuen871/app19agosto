@@ -2,9 +2,9 @@ import { Router } from 'express';
 import { newsInput, newsQuery } from '@utn/validation';
 import { adminAuth } from './admin-auth';
 import type { PrismaClient } from './generated/prisma/client';
-export function adminNewsRouter(db: PrismaClient, token: string | undefined) {
+export function adminNewsRouter(db: PrismaClient) {
   const router = Router();
-  router.use(adminAuth(token, db));
+  router.use(adminAuth(db));
   router.get('/', async (req, res) => {
     const { page, limit } = newsQuery.parse(req.query);
     const [items, total] = await db.$transaction([

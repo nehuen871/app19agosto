@@ -7,8 +7,11 @@ export function createApiClient(baseUrl: string) {
   function cover(news: News): News {
     return news.coverImageUrl?.startsWith('/api/v1/media/') && /^https?:\/\//.test(baseUrl) ? { ...news, coverImageUrl: new URL(news.coverImageUrl, baseUrl).href } : news;
   }
-  async function get<T>(path: string): Promise<T> {
+  async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
     const controller = new AbortController();
+    const abort = () => controller.abort();
+    if (signal?.aborted) abort();
+    else signal?.addEventListener('abort', abort, { once: true });
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const response = await fetch(`${baseUrl}${path}`, {
@@ -21,15 +24,16 @@ export function createApiClient(baseUrl: string) {
       return await response.json() as T;
     } finally {
       clearTimeout(timeout);
+      signal?.removeEventListener('abort', abort);
     }
   }
 
   return {
-    news: async (page = 1) => { const data = await get<Page<News>>(`/news?page=${page}`); return { ...data, items: data.items.map(cover) }; },
-    detail: async (slug: string) => cover(await get<News>(`/news/${encodeURIComponent(slug)}`)),
+    news: async (page = 1, signal?: AbortSignal) => { const data = await get<Page<News>>(`/news?page=${page}`, signal); return { ...data, items: data.items.map(cover) }; },
+    detail: async (slug: string, signal?: AbortSignal) => cover(await get<News>(`/news/${encodeURIComponent(slug)}`, signal)),
     categories: () => get<Category[]>('/categories'),
-    events: (month: string, page = 1) => get<Page<CalendarEvent>>(`/events?month=${encodeURIComponent(month)}&page=${page}`),
-    googleCalendarConfig: () => get<{ enabled: boolean; startUrl: string | null }>('/google-calendar/config'),
+    events: (month: string, page = 1, signal?: AbortSignal) => get<Page<CalendarEvent>>(`/events?month=${encodeURIComponent(month)}&page=${page}`, signal),
+    googleCalendarConfig: (signal?: AbortSignal) => get<{ enabled: boolean; startUrl: string | null }>('/google-calendar/config', signal),
   };
 }
 

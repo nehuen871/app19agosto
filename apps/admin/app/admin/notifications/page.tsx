@@ -1,3 +1,4 @@
+import { apiUrl } from '../../services/environment';
 import { SendPushForm, RefreshPushStatus } from './send-form';
 import Link from 'next/link';
 import { createApiClient } from '@utn/api-client';
@@ -15,7 +16,7 @@ export default async function Notifications({ searchParams }: { searchParams: Pr
   try {
     [data, news] = await Promise.all([
       api.notifications(page),
-      createApiClient(process.env.API_URL ?? 'http://api:4000/api/v1').news(),
+      createApiClient(apiUrl).news(),
     ]);
   } catch {
     return <section className="state" role="alert"><h1>No pudimos cargar las notificaciones</h1><p>Intentá nuevamente en unos instantes.</p><Link href="/admin/notifications">Reintentar</Link></section>;

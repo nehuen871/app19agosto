@@ -20,7 +20,7 @@ const fetcher: typeof fetch = async (input, init) => {
   assert.equal(String(input), 'https://openidconnect.googleapis.com/v1/userinfo');
   return Response.json(googleIdentity);
 };
-const app = () => createApp(db, { adminAccessToken: 'k'.repeat(32), googleFetch: fetcher });
+const app = () => createApp(db, { googleFetch: fetcher });
 before(() => {
   Object.assign(process.env, { GOOGLE_LOGIN_ENABLED: 'true', GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', APP_PUBLIC_URL: 'http://localhost:8081', ADMIN_PUBLIC_URL: 'http://localhost:3001', GOOGLE_APP_ACCESS: 'institutional', ALLOWED_EMAIL_DOMAINS: 'example.edu', ADMIN_GOOGLE_EMAILS: 'admin@example.edu' });
 });
@@ -47,7 +47,7 @@ test('config is explicit, disabled admin fails closed, startup rejects unsafe co
   assert.equal((await request(app()).get('/api/v1/auth/config?purpose=admin')).body.enabled, false);
   await request(app()).get('/api/v1/auth/google/start?purpose=admin').expect(503);
   process.env.ADMIN_GOOGLE_EMAILS = 'admin@example.edu';
-  const base = { DATABASE_URL: 'postgresql://u:p@db/app', ADMIN_ACCESS_TOKEN: 'k'.repeat(32) };
+  const base = { DATABASE_URL: 'postgresql://u:p@db/app' };
   for (const values of [{ GOOGLE_LOGIN_ENABLED: 'true' }, { ADMIN_PUBLIC_URL: 'https://attacker.invalid/admin' }, { ADMIN_GOOGLE_EMAILS: 'invalid' }, { ALLOWED_EMAIL_DOMAINS: '*.example.edu' }]) assert.throws(() => readEnvironment({ ...base, ...values }));
 });
 test('authorization uses PKCE, browser state, fixed callback and minimal login scopes', async () => {

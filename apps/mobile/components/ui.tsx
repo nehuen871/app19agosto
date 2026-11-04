@@ -1,9 +1,20 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- Metro requires static asset paths. */
 import { Image, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { PropsWithChildren } from 'react';
 import { colors, spacing, radius, typography, layout, interaction, brandMark, calendarColors, calendarLayout } from '@utn/design-tokens';
 import type { EventColor } from '@utn/api-client';
 const theme = colors.light;
+
+export function useScreenContentStyle() {
+  const insets = useSafeAreaInsets();
+  return [styles.content, { paddingBottom: spacing.lg + insets.bottom, paddingLeft: spacing.lg + insets.left, paddingRight: spacing.lg + insets.right }];
+}
+
+export function QueryNotice({ paused, failed, onRetry }: { paused: boolean; failed: boolean; onRetry: () => void }) {
+  if (!paused && !failed) return null;
+  return <View accessibilityRole="alert" style={styles.section}><Body>{paused ? 'Sin conexión. Se muestra el contenido disponible; se actualizará al reconectar.' : 'No pudimos actualizar el contenido. Conservamos la información disponible.'}</Body><Button title="Reintentar" variant="secondary" onPress={onRetry} /></View>;
+}
 
 export function BrandMark({ variant = 'logo' }: { variant?: 'logo' | 'isologo' }) {
   return <View style={styles.brandMark} accessible accessibilityRole="image" accessibilityLabel={brandMark.name}>
@@ -19,7 +30,7 @@ export function Heading({ children, level = 1 }: PropsWithChildren<{ level?: 1 |
   return <Text accessibilityRole="header" style={[styles.heading, typography[`heading${level}`]]}>{children}</Text>;
 }
 export function Body({ children, small = false }: PropsWithChildren<{ small?: boolean }>) {
-  return <Text style={[styles.body, small && typography.bodySmall]}>{children}</Text>;
+  return <Text selectable style={[styles.body, small && typography.bodySmall]}>{children}</Text>;
 }
 export function Badge({ children, featured = false }: PropsWithChildren<{ featured?: boolean }>) {
   return <View style={[styles.badge, featured && styles.badgeFeatured]}><Text style={styles.badgeText}>{children}</Text></View>;

@@ -1,4 +1,5 @@
-import { after, test } from 'node:test';
+import { createTestAdmin, removeTestAdmin, testAdminToken } from './test-admin';
+import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -7,16 +8,18 @@ import { db } from './db';
 import { createApp } from './app';
 import { calendarDays, calendarMonthShift, eventOnDay, googleCalendarUrl } from '../../../packages/api-client/calendar';
 import type { CalendarEvent } from '../../../packages/types';
-const token = randomUUID(), app = createApp(db, { adminAccessToken: token });
+const token = testAdminToken(), app = createApp(db);
 const imageIds: string[] = [], eventIds: string[] = [], newsIds: string[] = [];
 const prefix = 'media-test-' + randomUUID();
 const png = readFileSync(new URL('../../../packages/brand-assets/isotype/brand-isotype.png', import.meta.url));
+before(async () => { await createTestAdmin(db, token); });
 after(async () => {
   await db.auditLog.deleteMany({ where: { entityId: { in: [...imageIds, ...eventIds, ...newsIds] } } });
   await db.news.deleteMany({ where: { id: { in: newsIds } } });
   await db.category.deleteMany({ where: { slug: prefix } });
   await db.mediaImage.deleteMany({ where: { id: { in: imageIds } } });
   await db.calendarEvent.deleteMany({ where: { id: { in: eventIds } } });
+  await removeTestAdmin(db, token);
   await db.$disconnect();
 });
 test('image upload enforces authorization, types, signatures, size and dimensions', async () => {

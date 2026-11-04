@@ -43,6 +43,7 @@ services:
     environment:
       NODE_ENV: development
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+      EXPO_PUBLIC_WEB_API_URL: ${EXPO_PUBLIC_DEV_WEB_API_URL:-http://localhost:4000/api/v1}
       REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
     volumes:
       - ./apps/mobile/app:/workspace/apps/mobile/app:ro

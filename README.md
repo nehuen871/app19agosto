@@ -6,7 +6,7 @@ Los siete skills del proyecto están en `.agents/skills/`.
 
 ## Producción local
 
-1. Copiar `.env.example` a `.env`. Completar `POSTGRES_PASSWORD` y `ADMIN_ACCESS_TOKEN` (mínimo 32 caracteres aleatorios). Para la contraseña de PostgreSQL usar caracteres seguros para URL o codificarlos en la conexión.
+1. Copiar `.env.example` a `.env`. Completar `POSTGRES_PASSWORD` y la configuración de Google OAuth indicada en `docs/login-google.md`. Para la contraseña de PostgreSQL usar caracteres seguros para URL o codificarlos en la conexión.
 2. Ejecutar `./prod-local.sh`: construye imágenes, aplica migraciones y espera los healthchecks.
 3. Ejecutar `./smoke.sh`. API: `http://localhost:4000`; panel: `http://localhost:3001`.
 
@@ -24,7 +24,6 @@ Con Node 22 y pnpm 10.28.2: `pnpm install --frozen-lockfile`, generar Prisma con
 
 - `DATABASE_URL`: conexión PostgreSQL, requerida al ejecutar API/Prisma fuera de Compose; Compose usa DNS `db`.
 - `PORT`: puerto interno API, 4000 por defecto; `API_PORT` y `ADMIN_PORT` controlan puertos publicados.
-- `ADMIN_ACCESS_TOKEN`: clave administrativa local compartida entre API y panel. La autenticación institucional y los roles del MVP siguen pendientes; esta clave no los reemplaza.
 - `CORS_ORIGINS`: orígenes completos separados por comas, sin comodines ni rutas.
 - `DB_POOL_MAX`: conexiones máximas por proceso (10 por defecto). Dimensionar según réplicas y capacidad PostgreSQL.
 - `API_URL`: URL interna del backend para Next.js; Compose la configura.
@@ -47,3 +46,5 @@ El envío push web se activa con claves VAPID. Generarlas una sola vez con `node
 Las noticias admiten imágenes subidas desde el admin y se muestran en una columna. El módulo `/calendar` muestra eventos configurables en `/admin/events`. La integración con Google Calendar y sus credenciales OAuth están documentadas en [docs/calendario-imagenes.md](docs/calendario-imagenes.md).
 
 El login con Google de la app (`/account`) y del admin usa sesiones separadas. Configuración de credenciales, correos autorizados y compilaciones móviles: [docs/login-google.md](docs/login-google.md).
+
+Configuración de dominios, conexiones internas y URLs por ambiente: [docs/ambientes.md](docs/ambientes.md).

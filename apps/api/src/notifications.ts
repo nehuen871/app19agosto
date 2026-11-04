@@ -4,9 +4,9 @@ import { Router } from 'express';
 import { notificationDraft, notificationQuery } from '@utn/validation';
 import type { PrismaClient } from './generated/prisma/client';
 
-export function notificationsRouter(db: PrismaClient, accessToken: string | undefined) {
+export function notificationsRouter(db: PrismaClient) {
   const router = Router();
-  router.use(adminAuth(accessToken, db));
+  router.use(adminAuth(db));
   router.get('/', async (req, res) => {
     const { page, limit } = notificationQuery.parse(req.query);
     const [items, total] = await db.$transaction([

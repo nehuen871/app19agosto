@@ -25,4 +25,4 @@ Construir imágenes y conservar sus etiquetas inmutables antes de desplegar. Eje
 
 Rollback: volver a las imágenes anteriores únicamente si el esquema sigue siendo compatible. Ante un cambio incompatible, usar la migración correctiva previamente probada; restaurar un respaldo implica pérdida de cambios posteriores y requiere aprobación. Conservar el respaldo y la versión de migraciones de cada release.
 
-La clave administrativa local no implementa los roles USER/EDITOR/ADMIN ni sesiones institucionales. No declarar el MVP completo ni publicar el servicio como listo para producción hasta implementar y probar esos flujos.
+El panel requiere una sesión de Google con propósito ADMIN, rol ADMIN, cuenta sin bloqueo y correo autorizado en ADMIN_GOOGLE_EMAILS. El ingreso por clave compartida fue eliminado. La preparación completa para producción requiere las verificaciones documentadas en docs/login-google.md.

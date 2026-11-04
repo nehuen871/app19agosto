@@ -1,3 +1,4 @@
+import { createTestAdmin, removeTestAdmin, testAdminToken } from './test-admin';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -6,15 +7,17 @@ import request from 'supertest';
 import { db } from './db';
 import { createApp } from './app';
 import { processPushQueue } from './push';
-const token = randomUUID();
-const app = createApp(db, { adminAccessToken: token });
+const token = testAdminToken();
+const app = createApp(db);
 const notificationIds: string[] = [], subscriptionIds: string[] = [];
 const subscription = (suffix: string) => ({ endpoint: `https://fcm.googleapis.com/fcm/send/test-${randomUUID()}-${suffix}`, keys: { p256dh: 'a'.repeat(87), auth: 'b'.repeat(22) } });
 before(() => { const keys = webPush.generateVAPIDKeys(); process.env.PUSH_VAPID_PUBLIC_KEY = keys.publicKey; process.env.PUSH_VAPID_PRIVATE_KEY = keys.privateKey; process.env.PUSH_VAPID_SUBJECT = 'mailto:push@example.invalid'; });
+before(async () => { await createTestAdmin(db, token); });
 after(async () => {
   await db.auditLog.deleteMany({ where: { entityId: { in: notificationIds } } });
   await db.notification.deleteMany({ where: { id: { in: notificationIds } } });
   await db.pushSubscription.deleteMany({ where: { id: { in: subscriptionIds } } });
+  await removeTestAdmin(db, token);
   await db.$disconnect();
 });
 async function draft() {

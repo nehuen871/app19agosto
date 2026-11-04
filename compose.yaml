@@ -3,8 +3,7 @@ name: utnfrba
 x-api-environment: &api-environment
   NODE_ENV: production
   PORT: 4000
-  DATABASE_URL: postgresql://${POSTGRES_USER:-utnfrba}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-utnfrba}
-  ADMIN_ACCESS_TOKEN: ${ADMIN_ACCESS_TOKEN:?ADMIN_ACCESS_TOKEN is required}
+  DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-utnfrba}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-utnfrba}}
   PUSH_VAPID_PUBLIC_KEY: ${PUSH_VAPID_PUBLIC_KEY:-}
   PUSH_VAPID_PRIVATE_KEY: ${PUSH_VAPID_PRIVATE_KEY:-}
   PUSH_VAPID_SUBJECT: ${PUSH_VAPID_SUBJECT:-}
@@ -73,7 +72,7 @@ services:
       interval: 10s
       timeout: 6s
       retries: 12
-    ports: ['127.0.0.1:${API_PORT:-4000}:4000']
+    ports: ['${BIND_ADDRESS:-127.0.0.1}:${API_PORT:-4000}:4000']
     networks: [backend, frontend]
     restart: unless-stopped
 
@@ -86,8 +85,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      API_URL: http://api:4000/api/v1
-      ADMIN_ACCESS_TOKEN: ${ADMIN_ACCESS_TOKEN:?ADMIN_ACCESS_TOKEN is required}
+      API_URL: ${API_URL:-http://api:4000/api/v1}
     depends_on:
       api:
         condition: service_healthy
@@ -96,7 +94,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-    ports: ['127.0.0.1:${ADMIN_PORT:-3001}:3000']
+    ports: ['${BIND_ADDRESS:-127.0.0.1}:${ADMIN_PORT:-3001}:3000']
     networks: [frontend]
     restart: unless-stopped
 
@@ -106,10 +104,12 @@ services:
       context: .
       dockerfile: docker/mobile.Dockerfile
       target: runner
+      args:
+        EXPO_PUBLIC_WEB_API_URL: ${EXPO_PUBLIC_WEB_API_URL:-/api/v1}
     environment:
       NODE_ENV: production
       PORT: 8081
-      API_INTERNAL_URL: http://api:4000
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:4000}
     depends_on:
       api:
         condition: service_healthy
@@ -118,7 +118,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-    ports: ['127.0.0.1:${MOBILE_PORT:-8081}:8081']
+    ports: ['${BIND_ADDRESS:-127.0.0.1}:${MOBILE_PORT:-8081}:8081']
     networks: [frontend]
     restart: unless-stopped
 

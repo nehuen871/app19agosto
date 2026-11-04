@@ -1,18 +1,21 @@
-import { after, test } from 'node:test';
+import { createTestAdmin, removeTestAdmin, testAdminToken } from './test-admin';
+import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { db } from './db';
 import { createApp } from './app';
-const token = randomUUID();
-const app = createApp(db, { adminAccessToken: token });
+const token = testAdminToken();
+const app = createApp(db);
 const prefix = `test-${randomUUID()}`;
 const ids: string[] = [];
 const input = { title: 'Noticia', slug: prefix, summary: 'Resumen', content: '<script>Texto literal</script>', category: prefix };
+before(async () => { await createTestAdmin(db, token); });
 after(async () => {
   await db.auditLog.deleteMany({ where: { entityId: { in: ids } } });
   await db.news.deleteMany({ where: { id: { in: ids } } });
   await db.category.deleteMany({ where: { slug: prefix } });
+  await removeTestAdmin(db, token);
   await db.$disconnect();
 });
 test('denies unauthenticated news writes and listing', async () => {

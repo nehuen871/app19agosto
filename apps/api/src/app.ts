@@ -13,7 +13,7 @@ import { rateLimit } from 'express-rate-limit';
 import { ZodError } from 'zod';
 import { newsQuery, slugParam } from '@utn/validation';
 import type { PrismaClient } from './generated/prisma/client';
-export function createApp(db: PrismaClient, options: { adminAccessToken?: string; googleFetch?: typeof fetch } = { adminAccessToken: process.env.ADMIN_ACCESS_TOKEN }) {
+export function createApp(db: PrismaClient, options: { googleFetch?: typeof fetch } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use((req, res, next) => {
@@ -27,7 +27,7 @@ export function createApp(db: PrismaClient, options: { adminAccessToken?: string
   app.use(cors({ credentials: true, origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3001,http://localhost:8081').split(',').map(origin => origin.trim()) }));
   app.use(rateLimit({ windowMs: 60000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Demasiadas solicitudes', details: [] } } }));
   app.use('/api/v1/admin', rateLimit({ windowMs: 60000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Demasiadas solicitudes', details: [] } } }));
-  app.use('/api/v1', mediaRouter(db, options.adminAccessToken));
+  app.use('/api/v1', mediaRouter(db));
   app.use((req, res, next) => {
     if (['POST', 'PUT', 'PATCH'].includes(req.method) && !req.is('application/json')) {
       res.status(415).json({ error: { code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Usá application/json', details: [] } }); return;
@@ -36,11 +36,11 @@ export function createApp(db: PrismaClient, options: { adminAccessToken?: string
   });
   app.use(express.json({ limit: '32kb' }));
   app.use('/api/v1/auth', authRouter(db, options.googleFetch));
-  app.use('/api/v1', eventsRouter(db, options.adminAccessToken));
+  app.use('/api/v1', eventsRouter(db));
   app.use('/api/v1/google-calendar', googleCalendarRouter(db, options.googleFetch));
   app.use('/api/v1/push', pushRouter(db));
-  app.use('/api/v1/admin/news', adminNewsRouter(db, options.adminAccessToken));
-  app.use('/api/v1/admin/notifications', notificationsRouter(db, options.adminAccessToken));
+  app.use('/api/v1/admin/news', adminNewsRouter(db));
+  app.use('/api/v1/admin/notifications', notificationsRouter(db));
   app.get('/health/live', (_req, res) => { res.json({ status: 'ok' }); });
   app.get(['/health', '/health/ready'], async (_req, res) => {
     try { await db.$queryRaw`SELECT 1`; res.json({ status: 'ok' }); }
