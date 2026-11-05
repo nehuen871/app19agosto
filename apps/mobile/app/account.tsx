@@ -3,7 +3,7 @@ import { Platform, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { GoogleLoginCard } from '../components/google-login-card';
 import { AppNavigation } from '../components/AppNavigation';
-import { Body, Button, Card, Heading, LoadingIndicator, useScreenContentStyle, styles } from '../components/ui';
+import { Avatar, Body, Button, Card, CardHeader, CardFooter, Heading, LoadingIndicator, useScreenContentStyle, styles } from '../components/ui';
 import { useAuth } from '../services/auth';
 export default function AccountScreen() {
   const contentStyle = useScreenContentStyle();
@@ -20,7 +20,7 @@ export default function AccountScreen() {
   return <ScrollView style={styles.page} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle}>
     <>{auth.user && <AppNavigation current="account" />}</><Heading>{auth.user ? 'Mi cuenta' : 'Bienvenido a 19 de Agosto'}</Heading>
     {result ? <Body>{result}</Body> : null}
-    {auth.error ? <View accessibilityRole="alert"><Body>{auth.error}</Body><Button title="Reintentar" onPress={() => void auth.refresh()} disabled={auth.busy} /></View> : null}
-    {auth.busy ? <LoadingIndicator title="Consultando tu cuenta…" /> : auth.user ? <Card><Heading level={2}>{auth.user.name}</Heading><Body>{auth.user.email}</Body><Button title="Ver noticias" onPress={() => router.replace('/')} /><Button title="Cerrar sesión" variant="secondary" onPress={() => void auth.logout()} /></Card> : <GoogleLoginCard />}
+    {auth.error ? <View accessibilityRole="alert" style={styles.notice}><Body>{auth.error}</Body><Button title="Reintentar" onPress={() => void auth.refresh()} disabled={auth.busy} /></View> : null}
+    {auth.busy ? <LoadingIndicator title="Consultando tu cuenta…" /> : auth.user ? <Card><CardHeader><Avatar name={auth.user.name} /><Heading level={2}>{auth.user.name}</Heading><Body small muted>{auth.user.email}</Body></CardHeader><CardFooter><Button title="Ver noticias" onPress={() => router.replace('/')} /><Button title="Cerrar sesión" variant="outline" onPress={() => void auth.logout()} /></CardFooter></Card> : <GoogleLoginCard />}
   </ScrollView>;
 }

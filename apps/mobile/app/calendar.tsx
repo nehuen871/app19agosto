@@ -7,7 +7,7 @@ import { calendarColors, calendarLayout, layout, spacing } from '@utn/design-tok
 import { api } from '../services/api';
 import { AppNavigation } from '../components/AppNavigation';
 import { EventCard } from '../components/EventCard';
-import { Body, Button, Heading, LoadingIndicator, QueryNotice, useScreenContentStyle, styles } from '../components/ui';
+import { Body, Button, EmptyState, Heading, LoadingIndicator, QueryNotice, useScreenContentStyle, styles } from '../components/ui';
 const results: Record<string, string> = {
   saved: 'Google Calendar confirmó el guardado del evento.', exists: 'El evento ya está en tu Google Calendar.',
   cancelled: 'No autorizaste el guardado en Google Calendar.', failed: 'Google Calendar no pudo guardar el evento. Volvé a intentar.',
@@ -44,7 +44,7 @@ export default function CalendarScreen() {
       </View></ScrollView>
       <View style={styles.section}><Heading level={2}>{selected ? `Eventos del ${selected.slice(8, 10)}/${selected.slice(5, 7)}` : 'Eventos del mes'}</Heading>
         {selected && <Button title="Ver todo el mes" variant="secondary" onPress={() => setSelected(null)} />}
-        {shown.length ? shown.map(event => <EventCard key={event.id} event={event} googleStartUrl={google.data?.enabled ? google.data.startUrl : null} />) : <Body>{selected ? 'No hay eventos publicados para este día.' : 'Todavía no hay eventos publicados para este mes.'}</Body>}
+        {shown.length ? shown.map(event => <EventCard key={event.id} event={event} googleStartUrl={google.data?.enabled ? google.data.startUrl : null} />) : <EmptyState title={selected ? 'Un día sin eventos' : 'No hay eventos este mes'} description={selected ? 'Elegí otro día o volvé a ver el mes completo.' : 'Podés consultar otro mes o actualizar el calendario.'} />}
         {query.hasNextPage && <Button title={query.isFetchingNextPage ? 'Cargando…' : 'Cargar más eventos del mes'} disabled={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage(); }} />}
         {query.isFetchNextPageError && <Body>No pudimos cargar más eventos. Volvé a intentar.</Body>}
         <Button title="Actualizar eventos" variant="secondary" disabled={query.isRefetching} onPress={() => { void query.refetch(); }} />

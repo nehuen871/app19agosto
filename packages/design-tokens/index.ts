@@ -71,3 +71,18 @@ export const brandMark = {
   isotypeSize: 40, isologoSize: 128,
   safeAreaHorizontal: spacing.md, safeAreaVertical: spacing.sm,
 } as const;
+
+/** Shared component treatments: 2px focus ring for keyboard visibility;
+ * shadows derive from brand black and the existing spacing scale. */
+export const componentTokens = {
+  borderWidth: 1,
+  focusWidth: 2,
+  focusOffset: 2,
+  secondaryTextOpacity: 0.8,
+  cardShadow: [{ offsetX: 0, offsetY: spacing.xs, blurRadius: spacing.md, color: `${brand.colors.black}0A` }],
+  sizes: {
+    sm: { minHeight: layout.touchTarget, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+    md: { minHeight: layout.touchTarget, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+    lg: { minHeight: layout.touchTarget + spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  },
+};

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { Body, Button, styles } from './ui';
+import { Body, Button, Heading, styles } from './ui';
 import { pushApi, pushStorageKey as storageKey } from '../services/push';
 export function PushOptIn() {
   const [enabled, setEnabled] = useState(false);
@@ -37,8 +37,8 @@ export function PushOptIn() {
     } catch (error) { setMessage(error instanceof Error ? error.message : 'No pudimos configurar las notificaciones.'); }
     finally { setBusy(false); }
   }
-  return <View style={styles.state}>
-    {supported ? <Button title={busy ? 'Configurando…' : enabled ? 'Desactivar notificaciones' : 'Activar notificaciones'} disabled={busy} variant="secondary" onPress={() => { void toggle(); }} /> : <Body small>Las notificaciones requieren un navegador compatible y conexión HTTPS (localhost también funciona).</Body>}
+  return <View style={styles.preferencePanel}><View style={styles.preferenceText}><Heading level={3}>Notificaciones</Heading><Body small muted>Recibí avisos de nuevas publicaciones.</Body></View>
+    {supported ? <Button size="sm" loading={busy} title={busy ? 'Configurando…' : enabled ? 'Desactivar notificaciones' : 'Activar notificaciones'} disabled={busy} variant="secondary" onPress={() => { void toggle(); }} /> : <Body small>Las notificaciones requieren un navegador compatible y conexión HTTPS (localhost también funciona).</Body>}
     {message && <Body small>{message}</Body>}
   </View>;
 }
