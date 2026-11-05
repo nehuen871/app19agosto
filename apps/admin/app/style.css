@@ -64,3 +64,56 @@ button:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
 .checkbox-label input { width: auto; min-height: auto; accent-color: var(--primary); }
 .image-upload { display: grid; gap: var(--space-sm); }
 .image-preview { width: 100%; max-height: var(--reading-max); object-fit: contain; border-radius: var(--radius-md); }
+
+/* Reusables-inspired component variants, expressed with the shared UTN tokens. */
+body { background: var(--editorial); }
+main { min-width: 0; }
+.admin-nav { gap: var(--space-sm); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full); margin-block: var(--space-md); padding: var(--space-xs); }
+.admin-nav a { display: flex; align-items: center; justify-content: center; flex: 1; min-height: var(--touch-target); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-full); text-decoration: none; font-size: var(--label-size); font-weight: var(--label-weight); }
+.admin-nav a:hover { background: var(--secondary); }
+.news-card, .calendar-panel { border-radius: var(--radius-xl); box-shadow: 0 var(--space-xs) var(--space-md) color-mix(in srgb, var(--foreground) 4%, transparent); }
+.news-card.featured { border-top: var(--space-xs) solid var(--accent); }
+.badge { border-radius: var(--radius-full); font-size: var(--caption-size); line-height: var(--caption-height); }
+.notification-columns > section { min-width: 0; }
+.notification-columns > section > h2 { margin-bottom: var(--space-lg); }
+.notification-form { padding: var(--space-lg); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); gap: var(--space-sm); }
+.news-card .notification-form { padding: 0; border: 0; box-shadow: none; }
+.notification-form input, .notification-form textarea, .notification-form select { border-color: var(--border); font-size: var(--body-size); line-height: var(--body-height); }
+.notification-form input:hover, .notification-form textarea:hover, .notification-form select:hover { border-color: var(--primary); }
+.notification-form :is(input, textarea, select):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.notification-form :is(input, textarea, select):disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
+.notification-form :is(input, textarea, select)[aria-invalid="true"] { border-color: var(--error); }
+.notification-form fieldset { min-width: 0; margin: 0; padding: var(--space-md); display: grid; gap: var(--space-sm); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.notification-form legend { padding-inline: var(--space-sm); font-weight: var(--label-weight); }
+.field-help { opacity: 0.8; }
+.form-error { padding: var(--space-md); border: 1px solid var(--error); border-radius: var(--radius-md); }
+.calendar-panel { background: var(--surface); border: 1px solid var(--border); padding: var(--space-lg); margin-bottom: var(--space-xl); }
+.checkbox-label { padding-block: var(--space-sm); }
+.checkbox-label input { width: var(--space-lg); height: var(--space-lg); flex-shrink: 0; }
+@media (max-width: 600px) {
+  main { padding: var(--space-md); }
+  .admin-nav { margin-inline: var(--space-md); }
+  .admin-nav a { padding-inline: var(--space-sm); }
+  .calendar-panel { padding: var(--space-sm); }
+  .notification-form { padding: var(--space-md); }
+}
+
+.record-manager { display: grid; gap: var(--space-xl); }
+.record-table-panel { min-width: 0; padding: var(--space-lg); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); }
+.record-table-scroll { max-width: 100%; overflow-x: auto; }
+.record-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--bodySmall-size); line-height: var(--bodySmall-height); }
+.record-table caption { text-align: left; padding-block: var(--space-md); color: var(--foreground); }
+.record-table :is(th, td) { padding: var(--space-md); border-bottom: 1px solid var(--border); vertical-align: top; }
+.record-table thead { background: var(--editorial); }
+.record-table tbody tr:hover { background: var(--editorial); }
+.record-table tbody th { min-width: calc(var(--space-2xl) * 4); font-weight: var(--label-weight); }
+.record-table-title { display: block; overflow-wrap: anywhere; margin-bottom: var(--space-sm); }
+.record-table time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.record-editor { display: grid; gap: var(--space-lg); max-width: var(--reading-max); scroll-margin-top: var(--space-lg); }
+.event-calendar-secondary { min-width: 0; }
+@media (max-width: 600px) { .record-table-panel { padding: var(--space-md); } }
+
+.record-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-sm); }
+.button-success { background: var(--success); border-color: var(--success); color: var(--primaryForeground); }
+.button-danger { background: var(--error); border-color: var(--error); color: var(--primaryForeground); }
+.news-visibility-action { display: grid; gap: var(--space-sm); }

@@ -16,7 +16,8 @@ export interface NewsInput {
   coverImageUrl?: string | null; featured?: boolean; status?: 'DRAFT' | 'PUBLISHED';
   coverImageId?: string | null;
 }
-export interface AdminNews extends News { status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' }
+export interface AdminNews extends News { status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; coverImageId?: string | null }
+export type NewsUpdateInput = Omit<NewsInput, 'status'> & { status: AdminNews['status'] };
 
 export type EventColor = 'BLUE' | 'YELLOW' | 'LIGHT_BLUE' | 'CYAN_GRAY';
 export interface EventInput {

@@ -10,9 +10,10 @@ export function EventForm({ event }: { event?: CalendarEvent }) {
     <label htmlFor={`${prefix}-title`}>Título</label><input id={`${prefix}-title`} name="title" required maxLength={160} defaultValue={event?.title} />
     <label htmlFor={`${prefix}-description`}>Texto del evento</label><textarea id={`${prefix}-description`} name="description" maxLength={5000} rows={4} defaultValue={event?.description} />
     <label htmlFor={`${prefix}-location`}>Lugar (opcional)</label><input id={`${prefix}-location`} name="location" maxLength={300} defaultValue={event?.location} />
+    <fieldset><legend>Fecha y horario</legend>
     <label htmlFor={`${prefix}-start`}>Inicio</label><input id={`${prefix}-start`} name="startsAt" type="datetime-local" required defaultValue={event && calendarDateTime(event.startsAt)} />
     <label htmlFor={`${prefix}-end`}>Fin</label><input id={`${prefix}-end`} name="endsAt" type="datetime-local" required defaultValue={event && calendarDateTime(event.endsAt)} />
-    <span className="field-help">Horarios de Argentina. El fin debe ser posterior al inicio.</span>
+    <span className="field-help">Horarios de Argentina. El fin debe ser posterior al inicio.</span></fieldset>
     <label htmlFor={`${prefix}-color`}>Color en el calendario</label><select id={`${prefix}-color`} name="color" defaultValue={event?.color ?? 'BLUE'}>{Object.entries(calendarColors).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}</select>
     <label htmlFor={`${prefix}-status`}>Estado</label><select id={`${prefix}-status`} name="status" defaultValue={event?.status ?? 'DRAFT'}><option value="DRAFT">Borrador</option><option value="PUBLISHED">Publicado</option><option value="CANCELLED">Cancelado</option></select>
     <span className="field-help">Solo los eventos publicados aparecen en la app.</span>

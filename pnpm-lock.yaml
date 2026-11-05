@@ -26,6 +26,9 @@ importers:
       '@utn/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@utn/calendar':
+        specifier: workspace:*
+        version: link:../../packages/calendar
       '@utn/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -124,6 +127,9 @@ importers:
       '@utn/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@utn/calendar':
+        specifier: workspace:*
+        version: link:../../packages/calendar
       '@utn/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -188,6 +194,42 @@ importers:
       '@utn/types':
         specifier: workspace:*
         version: link:../types
+
+  packages/calendar:
+    dependencies:
+      '@preact/signals':
+        specifier: ^2.11.4
+        version: 2.11.4(preact@10.29.8)
+      '@schedule-x/calendar':
+        specifier: ^4.9.1
+        version: 4.9.1(@preact/signals@2.11.4(preact@10.29.8))(preact@10.29.8)(temporal-polyfill@0.3.2)
+      '@schedule-x/events-service':
+        specifier: ^4.9.1
+        version: 4.9.1
+      '@schedule-x/react':
+        specifier: ^4.1.0
+        version: 4.1.0(@schedule-x/calendar@4.9.1(@preact/signals@2.11.4(preact@10.29.8))(preact@10.29.8)(temporal-polyfill@0.3.2))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@schedule-x/theme-default':
+        specifier: ^4.9.1
+        version: 4.9.1
+      '@utn/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@utn/design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
+      preact:
+        specifier: ^10.27.0
+        version: 10.29.8
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+      temporal-polyfill:
+        specifier: 0.3.2
+        version: 0.3.2
 
   packages/design-tokens: {}
 
@@ -1246,6 +1288,14 @@ packages:
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
 
+  '@preact/signals-core@1.14.5':
+    resolution: {integrity: sha512-vcRv7Ityz5JVmeiVqIluLFzT/PDS/AlhHUpw3/aUWqcVUs6bDGIPXE/6RSC4evBNWYvnniozg5Syfj33al3gkg==}
+
+  '@preact/signals@2.11.4':
+    resolution: {integrity: sha512-Rb+5RPo9gWSaHtzJeauhHxiC8KP/IF2DEPkHPEOGOnuy2wnJzRqyeLRankUCYd6ADqtxS6GnWGv6Ie343d8aYw==}
+    peerDependencies:
+      preact: '>= 10.25.0 || >=11.0.0-0'
+
   '@prisma/adapter-pg@7.10.0':
     resolution: {integrity: sha512-N7nwSor0HO1Kz6xBv0TPAjAPysKK0fac6p4fVN3ensLOuzc/83Fgmln5k92eK/cvzqdkSR/2kkAqlbcdwVrwpw==}
 
@@ -1670,6 +1720,26 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  '@schedule-x/calendar@4.9.1':
+    resolution: {integrity: sha512-/Zsn49BqOklOZmftsh2B5QyqF/hMf8tUqpcBbg+W0xv7FFrYd1qsYeJfdEVPVKTa42hybyswLJvtglnKgaqC+Q==}
+    peerDependencies:
+      '@preact/signals': ^2.0.2
+      preact: ^10.19.2
+      temporal-polyfill: 0.3.2
+
+  '@schedule-x/events-service@4.9.1':
+    resolution: {integrity: sha512-7pZMC6Khh4/i5PwTkCJzYb4qxVuFHKi+ho5xmkLu0Kv7HNO9z06rkcJw4Kc88bsbMJLkLXi6vTnHFClROIEZVg==}
+
+  '@schedule-x/react@4.1.0':
+    resolution: {integrity: sha512-l2hn1kdTModk4Lbt+nEr/VAcuNMA+w+hAAtgz8VLOj5UeieM7PWoK+cDapzPHCjUKisCSPd8QZfAX966Ma82kQ==}
+    peerDependencies:
+      '@schedule-x/calendar': ^3.1.0 || ^4.0.0
+      react: ^16.7.0 || ^17 || ^18 || ^19
+      react-dom: ^16.7.0 || ^17 || ^18 || ^19
+
+  '@schedule-x/theme-default@4.9.1':
+    resolution: {integrity: sha512-mCe0Ly9ZEBc1nsEDq2vTVvASSmM6oO5a4Nt+ogeYBnsZIBk3w9pk2IcaJHcXqHIS0uA1b8TzmjlpgvorvMtZ7w==}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -3732,6 +3802,14 @@ packages:
     resolution: {integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==}
     engines: {node: '>=12'}
 
+  preact@10.29.8:
+    resolution: {integrity: sha512-ej2aVZ+vZ8WO7tvlQWRM9N63A0KzF9q4mWJfDUHgYaIofWY9hu74QdnQrjoPMmZi2/nZ5gN0bJCQF49xQqx09Q==}
+    peerDependencies:
+      preact-render-to-string: '>=5'
+    peerDependenciesMeta:
+      preact-render-to-string:
+        optional: true
+
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -4262,6 +4340,12 @@ packages:
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  temporal-polyfill@0.3.2:
+    resolution: {integrity: sha512-TzHthD/heRK947GNiSu3Y5gSPpeUDH34+LESnfsq8bqpFhsB79HFBX8+Z834IVX68P3EUyRPZK5bL/1fh437Eg==}
+
+  temporal-spec@0.3.1:
+    resolution: {integrity: sha512-B4TUhezh9knfSIMwt7RVggApDRJZo73uZdj8AacL2mZ8RP5KtLianh2MXxL06GN9ESYiIsiuoLQhgVfwe55Yhw==}
 
   terminal-link@2.1.1:
     resolution: {integrity: sha512-un0FmiRUQNr5PJqy9kP7c40F5BOfpGlYTrxonDChEZB7pzZxRNp/bt+ymiy9/npwXya9KH99nJ/GXFIiUkYGFQ==}
@@ -5741,6 +5825,13 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.8.0
 
+  '@preact/signals-core@1.14.5': {}
+
+  '@preact/signals@2.11.4(preact@10.29.8)':
+    dependencies:
+      '@preact/signals-core': 1.14.5
+      preact: 10.29.8
+
   '@prisma/adapter-pg@7.10.0':
     dependencies:
       '@prisma/driver-adapter-utils': 7.10.0
@@ -6196,6 +6287,22 @@ snapshots:
       react-native: 0.86.3(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.2.3)
     optionalDependencies:
       '@types/react': 19.3.0
+
+  '@schedule-x/calendar@4.9.1(@preact/signals@2.11.4(preact@10.29.8))(preact@10.29.8)(temporal-polyfill@0.3.2)':
+    dependencies:
+      '@preact/signals': 2.11.4(preact@10.29.8)
+      preact: 10.29.8
+      temporal-polyfill: 0.3.2
+
+  '@schedule-x/events-service@4.9.1': {}
+
+  '@schedule-x/react@4.1.0(@schedule-x/calendar@4.9.1(@preact/signals@2.11.4(preact@10.29.8))(preact@10.29.8)(temporal-polyfill@0.3.2))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@schedule-x/calendar': 4.9.1(@preact/signals@2.11.4(preact@10.29.8))(preact@10.29.8)(temporal-polyfill@0.3.2)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
+  '@schedule-x/theme-default@4.9.1': {}
 
   '@sinclair/typebox@0.27.12': {}
 
@@ -8584,6 +8691,8 @@ snapshots:
 
   postgres@3.4.7: {}
 
+  preact@10.29.8: {}
+
   prelude-ls@1.2.1: {}
 
   pretty-format@29.7.0:
@@ -9194,6 +9303,12 @@ snapshots:
       supports-color: 7.2.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  temporal-polyfill@0.3.2:
+    dependencies:
+      temporal-spec: 0.3.1
+
+  temporal-spec@0.3.1: {}
 
   terminal-link@2.1.1:
     dependencies:

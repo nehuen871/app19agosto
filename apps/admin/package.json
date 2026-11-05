@@ -14,7 +14,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "@utn/api-client": "workspace:*",
-    "@utn/design-tokens": "workspace:*"
+    "@utn/design-tokens": "workspace:*",
+    "@utn/calendar": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",

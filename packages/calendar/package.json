@@ -1,0 +1,24 @@
+{
+  "name": "@utn/calendar",
+  "private": true,
+  "version": "0.1.0",
+  "exports": {
+    ".": "./index.tsx",
+    "./style.css": "./style.css"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.11.4",
+    "@schedule-x/calendar": "^4.9.1",
+    "@schedule-x/events-service": "^4.9.1",
+    "@schedule-x/react": "^4.1.0",
+    "@schedule-x/theme-default": "^4.9.1",
+    "preact": "^10.27.0",
+    "temporal-polyfill": "0.3.2",
+    "@utn/api-client": "workspace:*",
+    "@utn/design-tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

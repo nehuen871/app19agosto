@@ -1,0 +1,26 @@
+/* All surfaces and metrics inherit UTN's shared tokens from the host. */
+.utn-calendar {
+  --sx-color-primary: var(--primary);
+  --sx-color-on-primary: var(--primaryForeground);
+  --sx-color-primary-container: var(--secondary);
+  --sx-color-on-primary-container: var(--secondaryForeground);
+  --sx-color-surface: var(--surface);
+  --sx-color-on-surface: var(--foreground);
+  --sx-color-surface-container: var(--surface);
+  --sx-color-surface-container-low: var(--editorial);
+  --sx-color-surface-container-high: var(--secondary);
+  --sx-color-outline: var(--border);
+  --sx-color-outline-variant: var(--border);
+  --sx-color-neutral: var(--foreground);
+  --sx-color-neutral-variant: var(--foreground);
+  --sx-border-radius: var(--radius-lg);
+  width: 100%; font-family: inherit;
+}
+.utn-calendar .sx-react-calendar-wrapper { width: 100%; height: 600px; }
+.utn-calendar .sx__calendar { border-radius: var(--radius-lg); font-family: inherit; }
+.utn-calendar .sx__calendar-header:empty { display: none; }
+.utn-calendar button { font: inherit; }
+.utn-calendar button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.utn-calendar .sx__month-grid-day__header-date { min-width: var(--touch-target); min-height: var(--touch-target); }
+@media (max-width: 600px) { .utn-calendar .sx-react-calendar-wrapper { height: 560px; } }
+@media (prefers-reduced-motion: reduce) { .utn-calendar * { animation: none !important; transition: none !important; } }

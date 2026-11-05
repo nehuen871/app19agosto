@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { calendarDate, calendarDays, calendarMonthShift, calendarTimeZone, eventOnDay } from '@utn/api-client';
-import { calendarColors, calendarLayout, layout, spacing } from '@utn/design-tokens';
+import { calendarDate, calendarMonthShift, calendarTimeZone, eventOnDay } from '@utn/api-client';
+import EventCalendarDOM from '../components/event-calendar-dom';
 import { api } from '../services/api';
 import { AppNavigation } from '../components/AppNavigation';
 import { EventCard } from '../components/EventCard';
@@ -17,31 +17,20 @@ export default function CalendarScreen() {
   const contentStyle = useScreenContentStyle();
   const { googleResult, month: requestedMonth } = useLocalSearchParams<{ googleResult?: string; month?: string }>();
   const today = calendarDate(new Date()), [month, setMonth] = useState(requestedMonth && /^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : today.slice(0, 7)), [selected, setSelected] = useState<string | null>(null);
-  const { width } = useWindowDimensions();
   const query = useInfiniteQuery({ queryKey: ['events', month], initialPageParam: 1, queryFn: ({ pageParam, signal }) => api.events(month, pageParam, signal), getNextPageParam: page => page.page * page.limit < page.total ? page.page + 1 : undefined });
   const google = useQuery({ queryKey: ['google-calendar-config'], queryFn: ({ signal }) => api.googleCalendarConfig(signal) });
   const events = query.data?.pages.flatMap(page => page.items) ?? [];
   const shown = selected ? events.filter(event => eventOnDay(event, selected)) : events;
   function changeMonth(offset: number) { setMonth(calendarMonthShift(month, offset)); setSelected(null); }
-  const gridWidth = Math.max(calendarLayout.minWidth, Math.min(width - spacing.lg * 2, layout.readingMax - spacing.lg * 2));
   return <ScrollView style={styles.page} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle}>
     <AppNavigation current="calendar" /><Heading>Calendario de eventos</Heading><Body>Horarios de Argentina. Elegí un día para ver sus eventos.</Body>
     {googleResult && results[googleResult] && <Body>{results[googleResult]}</Body>}
-    <View style={styles.navigation}><Button title="Mes anterior" variant="secondary" disabled={month === '2000-01'} onPress={() => changeMonth(-1)} /><Button title="Mes siguiente" variant="secondary" disabled={month === '2100-12'} onPress={() => changeMonth(1)} /></View>
+    <View style={styles.paginationButtons}><Button style={styles.paginationButton} title="Mes anterior" variant="secondary" disabled={month === '2000-01'} onPress={() => changeMonth(-1)} /><Button style={styles.paginationButton} title="Mes siguiente" variant="secondary" disabled={month === '2100-12'} onPress={() => changeMonth(1)} /></View>
     <Heading level={2}>{new Date(`${month}-01T12:00:00-03:00`).toLocaleDateString('es-AR', { timeZone: calendarTimeZone, month: 'long', year: 'numeric' })}</Heading>
     {!query.data ? query.fetchStatus === 'paused' ? <QueryNotice paused failed={false} onRetry={() => void query.refetch()} /> : !query.isError ? <LoadingIndicator title="Cargando eventos…" /> : <><Body>No pudimos cargar los eventos. Revisá tu conexión.</Body><Button title="Reintentar" onPress={() => { void query.refetch(); }} /></> : <>
       <QueryNotice paused={query.fetchStatus === 'paused'} failed={query.isRefetchError} onRetry={() => void query.refetch()} />
-      <ScrollView horizontal contentContainerStyle={{ width: gridWidth }}><View style={[styles.calendarGrid, { width: gridWidth }]}>
-        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => <View key={day} style={styles.calendarCell}><Body small>{day}</Body></View>)}
-        {calendarDays(month).map((day, index) => {
-          if (!day) return <View key={`empty-${index}`} style={styles.calendarCell} />;
-          const items = events.filter(event => eventOnDay(event, day));
-          const colors = [...new Set(items.map(event => event.color))];
-          return <Pressable key={day} accessibilityRole="button" accessibilityLabel={`${day}, ${items.length} eventos${day === today ? ', hoy' : ''}`} accessibilityState={{ selected: selected === day }} onPress={() => setSelected(day)} style={[styles.calendarCell, selected === day && styles.calendarSelected]}>
-            <Body small>{Number(day.slice(-2))}</Body><View style={styles.badges}>{colors.map(color => <View key={color} style={[styles.calendarDot, { backgroundColor: calendarColors[color].background }]} />)}</View>
-          </Pressable>;
-        })}
-      </View></ScrollView>
+      <EventCalendarDOM key={month} month={month} events={events} onSelectDate={async day => { setSelected(day); }} onSelectEvent={async id => { const event = events.find(item => item.id === id); if (event) setSelected(calendarDate(event.startsAt)); }} dom={{ matchContents: true, scrollEnabled: false }} />
+      {query.hasNextPage && <Body small>El calendario muestra los eventos cargados. Cargá más para completar el mes.</Body>}
       <View style={styles.section}><Heading level={2}>{selected ? `Eventos del ${selected.slice(8, 10)}/${selected.slice(5, 7)}` : 'Eventos del mes'}</Heading>
         {selected && <Button title="Ver todo el mes" variant="secondary" onPress={() => setSelected(null)} />}
         {shown.length ? shown.map(event => <EventCard key={event.id} event={event} googleStartUrl={google.data?.enabled ? google.data.startUrl : null} />) : <EmptyState title={selected ? 'Un día sin eventos' : 'No hay eventos este mes'} description={selected ? 'Elegí otro día o volvé a ver el mes completo.' : 'Podés consultar otro mes o actualizar el calendario.'} />}

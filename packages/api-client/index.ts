@@ -1,4 +1,4 @@
-import type { Category, News, Page, Notification, NotificationDraft, NewsInput, AdminNews, CalendarEvent, EventInput, MediaImage } from '@utn/types';
+import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage } from '@utn/types';
 export * from './calendar';
 export * from './auth';
 export type { CalendarEvent, EventInput, EventColor } from '@utn/types';
@@ -37,11 +37,12 @@ export function createApiClient(baseUrl: string) {
   };
 }
 
+export type { AdminNews, NewsUpdateInput } from '@utn/types';
 export type { News } from '@utn/types';
 
 // Only call this client from the admin server; credentials never reach client JS.
 export function createAdminApiClient(baseUrl: string, accessToken: string) {
-  async function request<T>(path: string, payload?: NotificationDraft | NewsInput | EventInput | Record<string, never>, resource = 'notifications', method = payload ? 'POST' : 'GET'): Promise<T> {
+  async function request<T>(path: string, payload?: { published: boolean } | NotificationDraft | NewsInput | NewsUpdateInput | EventInput | Record<string, never>, resource = 'notifications', method = payload ? 'POST' : 'GET'): Promise<T> {
     const response = await fetch(`${baseUrl}/admin/${resource}${path}`, {
       method,
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -72,6 +73,8 @@ export function createAdminApiClient(baseUrl: string, accessToken: string) {
     },
     news: (page = 1) => request<Page<AdminNews>>(`?page=${page}`, undefined, 'news'),
     createNews: (data: NewsInput) => request<AdminNews>('', data, 'news'),
+    setNewsVisibility: (id: string, published: boolean) => request<AdminNews>(`/${encodeURIComponent(id)}/visibility`, { published }, 'news', 'PATCH'),
+    updateNews: (id: string, data: NewsUpdateInput) => request<AdminNews>(`/${encodeURIComponent(id)}`, data, 'news', 'PATCH'),
     sendNotification: (id: string) => request<Notification>(`/${encodeURIComponent(id)}/send`, {}),
     notifications: (page = 1) => request<Page<Notification>>(`?page=${page}`),
     createNotification: (data: NotificationDraft) => request<Notification>('', data),

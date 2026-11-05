@@ -24,6 +24,8 @@ export const newsInput = z.object({
   status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
 }).strict();
 
+export const newsUpdateInput = newsInput.extend({ status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']) });
+
 export const eventInput = z.object({
   title: z.string().trim().min(1).max(160),
   description: z.string().trim().max(5000).default(''),

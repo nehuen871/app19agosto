@@ -1,11 +1,19 @@
+/* Button, Card, Badge and text context adapted from React Native Reusables (MIT).
+ * NativeWind classes are expressed through UTN tokens to preserve the installed stack.
+ * See docs/licenses/react-native-reusables.txt. */
 /* eslint-disable @typescript-eslint/no-require-imports -- Metro requires static asset paths. */
-import { Image, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, ActivityIndicator, Pressable, StyleSheet, Text as NativeText, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { forwardRef, useState, type ComponentRef, type PropsWithChildren, type ReactNode } from 'react';
-import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
-import { colors, spacing, radius, typography, layout, interaction, brandMark, calendarColors, calendarLayout, componentTokens } from '@utn/design-tokens';
+import { createContext, use, forwardRef, useState, type ComponentRef, type PropsWithChildren, type ReactNode } from 'react';
+import type { PressableProps, StyleProp, TextStyle, ViewStyle, ViewProps } from 'react-native';
+import { colors, spacing, radius, typography, layout, interaction, brandMark, calendarColors, componentTokens } from '@utn/design-tokens';
 import type { EventColor } from '@utn/api-client';
 const theme = colors.light;
+const TextStyleContext = createContext<StyleProp<TextStyle>>(undefined);
+export function Text({ style, ...props }: React.ComponentProps<typeof import('react-native').Text>) {
+  const inherited = use(TextStyleContext);
+  return <NativeText {...props} style={[styles.body, inherited, style]} />;
+}
 
 export function useScreenContentStyle() {
   const insets = useSafeAreaInsets();
@@ -24,12 +32,11 @@ export function BrandMark({ variant = 'logo' }: { variant?: 'logo' | 'isologo' }
     </View>
   </View>;
 }
-export function Card({ children, featured = false, accent }: PropsWithChildren<{ featured?: boolean; accent?: EventColor }>) {
-  return <View style={[styles.card, featured && styles.featured, accent && { borderLeftWidth: spacing.xs, borderLeftColor: calendarColors[accent].background }]}>{children}</View>;
+export function Card({ children, featured = false, accent, style, ...props }: ViewProps & { featured?: boolean; accent?: EventColor }) {
+  return <TextStyleContext value={{ color: theme.surfaceForeground }}><View {...props} style={[styles.card, featured && styles.featured, accent && { borderLeftWidth: spacing.xs, borderLeftColor: calendarColors[accent].background }, style]}>{children}</View></TextStyleContext>;
 }
-export function CardHeader({ children }: PropsWithChildren) {
-  return <View style={styles.cardHeader}>{children}</View>;
-}
+export function CardHeader({ style, ...props }: ViewProps) { return <View {...props} style={[styles.cardHeader, style]} />; }
+export function CardContent({ style, ...props }: ViewProps) { return <View {...props} style={[styles.cardHeader, style]} />; }
 export function CardFooter({ children }: PropsWithChildren) {
   return <View style={styles.cardFooter}>{children}</View>;
 }
@@ -49,8 +56,8 @@ export function Heading({ children, level = 1 }: PropsWithChildren<{ level?: 1 |
 export function Body({ children, small = false, muted = false }: PropsWithChildren<{ small?: boolean; muted?: boolean }>) {
   return <Text selectable style={[styles.body, small && typography.bodySmall, muted && styles.mutedText]}>{children}</Text>;
 }
-export function Badge({ children, featured = false }: PropsWithChildren<{ featured?: boolean }>) {
-  return <View style={[styles.badge, featured && styles.badgeFeatured]}><Text style={styles.badgeText}>{children}</Text></View>;
+export function Badge({ children, featured = false, variant = 'secondary' }: PropsWithChildren<{ featured?: boolean; variant?: 'secondary' | 'outline' | 'primary' }>) {
+  return <View style={[styles.badge, variant === 'outline' && styles.badgeOutline, variant === 'primary' && styles.badgePrimary, featured && styles.badgeFeatured]}><Text style={[styles.badgeText, variant === 'primary' && !featured && { color: theme.primaryForeground }]}>{children}</Text></View>;
 }
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
@@ -72,26 +79,22 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
       variant === 'ghost' && styles.buttonGhost, variant === 'danger' && styles.buttonDanger,
       hovered && !blocked && styles.pressed, pressed && styles.pressed, focused && styles.focused, blocked && styles.disabled, style]}>
     {loading ? <ActivityIndicator color={lightText ? theme.primaryForeground : theme.primary} accessibilityElementsHidden /> : leading}
-    <Text style={[styles.buttonText, !lightText && styles.buttonSecondaryText]}>{title}</Text>
+    <TextStyleContext value={[styles.buttonText, !lightText && styles.buttonSecondaryText]}><Text>{title}</Text></TextStyleContext>
   </Pressable>;
 });
 export function LoadingIndicator({ title = 'Cargando noticias…' }: { title?: string }) {
   return <View accessibilityRole="progressbar" accessibilityLabel={title} style={styles.state}><ActivityIndicator color={theme.primary} /><Body>{title}</Body></View>;
 }
 export const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: theme.background },
+  page: { flex: 1, backgroundColor: theme.editorial },
   section: { gap: spacing.lg },
-  navigation: { flexDirection: 'row', gap: spacing.xs, backgroundColor: theme.editorial, padding: spacing.xs, borderRadius: radius.lg },
+  navigation: { flexDirection: 'row', gap: spacing.xs, backgroundColor: theme.surface, padding: spacing.xs, borderRadius: radius.full, borderWidth: componentTokens.borderWidth, borderColor: theme.border },
   preferencePanel: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md, borderRadius: radius.lg, borderWidth: componentTokens.borderWidth, borderColor: theme.border, padding: spacing.md },
   preferenceText: { flexGrow: 1, flexShrink: 1, gap: spacing.xs },
   pagination: { gap: spacing.md, borderTopWidth: componentTokens.borderWidth, borderColor: theme.border, paddingTop: spacing.lg },
   paginationButtons: { flexDirection: 'row', gap: spacing.sm },
   paginationButton: { flex: 1 },
-  navigationItem: { flex: 1, paddingHorizontal: spacing.sm },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', minWidth: calendarLayout.minWidth },
-  calendarCell: { width: `${calendarLayout.columnPercent}%`, minHeight: layout.touchTarget, padding: spacing.xs, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.border, gap: spacing.xs },
-  calendarSelected: { borderColor: theme.primary, backgroundColor: theme.secondary },
-  calendarDot: { width: spacing.sm, height: spacing.sm, borderRadius: radius.full },
+  navigationItem: { flex: 1, paddingHorizontal: spacing.sm, borderRadius: radius.full },
   content: { padding: spacing.lg, gap: spacing.lg, width: '100%', maxWidth: layout.readingMax, alignSelf: 'center' },
   state: { padding: spacing.lg, gap: spacing.md, backgroundColor: theme.surface, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
   brandMark: { paddingHorizontal: brandMark.safeAreaHorizontal, paddingVertical: brandMark.safeAreaVertical },
@@ -100,7 +103,7 @@ export const styles = StyleSheet.create({
   isologoImage: { width: '100%', height: '100%' },
   logoViewport: { width: brandMark.logoWidth, height: brandMark.logoHeight, overflow: 'hidden' },
   logoImage: { position: 'absolute', width: brandMark.logoCanvasSize, height: brandMark.logoCanvasSize, top: brandMark.logoOffsetY },
-  card: { width: '100%', backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, borderWidth: componentTokens.borderWidth, borderColor: theme.border, borderCurve: 'continuous', boxShadow: componentTokens.cardShadow },
+  card: { width: '100%', backgroundColor: theme.surface, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.md, borderWidth: componentTokens.borderWidth, borderColor: theme.border, borderCurve: 'continuous', boxShadow: componentTokens.cardShadow },
   cardHeader: { gap: spacing.sm },
   cardFooter: { borderTopWidth: componentTokens.borderWidth, borderColor: theme.border, paddingTop: spacing.md, gap: spacing.sm },
   featured: { backgroundColor: theme.editorial, borderTopWidth: spacing.xs, borderTopColor: theme.accent },
@@ -115,12 +118,14 @@ export const styles = StyleSheet.create({
   skeletonLine: { width: '100%', height: typography.bodySmall.lineHeight, backgroundColor: theme.editorial, borderRadius: radius.sm },
   body: { ...typography.body, color: theme.foreground },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  badge: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full, backgroundColor: theme.secondary },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full, backgroundColor: theme.secondary, borderWidth: componentTokens.borderWidth, borderColor: 'transparent' },
   badgeFeatured: { backgroundColor: theme.accent },
-  badgeText: { ...typography.label, color: theme.secondaryForeground },
+  badgeOutline: { backgroundColor: theme.surface, borderColor: theme.border },
+  badgePrimary: { backgroundColor: theme.primary },
+  badgeText: { ...typography.caption, color: theme.secondaryForeground },
   button: { flexDirection: 'row', gap: spacing.sm, minHeight: layout.touchTarget, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary, borderRadius: radius.md, borderWidth: 1, borderColor: theme.primary },
   buttonSecondary: { backgroundColor: theme.secondary, borderColor: theme.secondary },
-  buttonOutline: { backgroundColor: theme.surface, borderColor: theme.primary },
+  buttonOutline: { backgroundColor: theme.surface, borderColor: theme.border },
   buttonGhost: { backgroundColor: 'transparent', borderColor: 'transparent' },
   buttonDanger: { backgroundColor: theme.error, borderColor: theme.error },
   focused: { outlineWidth: componentTokens.focusWidth, outlineColor: theme.focus, outlineOffset: componentTokens.focusOffset },
