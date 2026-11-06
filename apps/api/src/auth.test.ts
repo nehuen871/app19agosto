@@ -40,7 +40,7 @@ async function start(target = app(), purpose = 'app', extra = '') {
 async function finish(flow: Awaited<ReturnType<typeof start>>, extra = '') {
   return request(flow.target).get('/api/v1/auth/google/callback?purpose=' + flow.purpose + '&state=' + flow.state + '&code=test&scope=openid%20email%20profile' + extra).set('Cookie', flow.cookie).expect(302);
 }
-const sessionToken = (response: { headers: Record<string, unknown> }, name: string) => (response.headers['set-cookie'] as string[]).find(v => v.startsWith(name + '='))!.split(';')[0].slice(name.length + 1);
+const sessionToken = (response: { headers: Record<string, unknown> }, name: string) => (response.headers['set-cookie'] as string[]).slice().reverse().find(v => v.startsWith(name + '='))!.split(';')[0].slice(name.length + 1);
 test('config is explicit, disabled admin fails closed, startup rejects unsafe config', async () => {
   const result = await request(app()).get('/api/v1/auth/config').expect(200); assert.equal(result.body.enabled, true);
   process.env.ADMIN_GOOGLE_EMAILS = '';
@@ -146,4 +146,14 @@ test('limits repeated login attempts', async () => {
   const target = app();
   for (let i = 0; i < 60; i++) await request(target).get('/api/v1/auth/google/start?redirect=https://attacker.invalid').expect(400);
   await request(target).get('/api/v1/auth/google/start?redirect=https://attacker.invalid').expect(429);
+});
+
+test('a custom profile name survives a later Google login', async () => {
+  googleIdentity = { sub: prefix + '-profile', email: 'reader@example.edu', email_verified: true, name: 'Nombre Google' };
+  const first = await finish(await start());
+  const token = sessionToken(first, 'utn_app_session');
+  await request(app()).patch('/api/v1/auth/me').set('Cookie', 'utn_app_session=' + token).set('Origin', 'http://localhost:8081').send({ name: 'Nombre elegido' }).expect(200);
+  const second = await finish(await start());
+  const result = await request(app()).get('/api/v1/auth/me').set('Cookie', 'utn_app_session=' + sessionToken(second, 'utn_app_session')).expect(200);
+  assert.equal(result.body.user.name, 'Nombre elegido');
 });

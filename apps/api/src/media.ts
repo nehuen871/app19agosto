@@ -1,3 +1,4 @@
+import { readerAuth } from './reader-auth';
 import express, { Router } from 'express';
 import { z } from 'zod';
 import { adminAuth } from './admin-auth';
@@ -49,11 +50,11 @@ export function mediaRouter(db: PrismaClient) {
     });
     res.status(201).json({ id: image.id, url: `/api/v1/media/${image.id}` });
   });
-  router.get('/media/:id', async (req, res) => {
+  router.get('/media/:id', readerAuth(db), async (req, res) => {
     const id = z.uuid().parse(req.params.id);
     const image = await db.mediaImage.findUnique({ where: { id } });
     if (!image) { res.sendStatus(404); return; }
-    res.set({ 'Content-Type': image.mimeType, 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' }).send(Buffer.from(image.data));
+    res.set({ 'Content-Type': image.mimeType, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }).send(Buffer.from(image.data));
   });
   return router;
 }

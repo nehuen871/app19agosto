@@ -40,9 +40,9 @@ test('limits brute-force attempts on administrative routes', async () => {
   const response = await request(target).get('/api/v1/admin/notifications').expect(429);
   assert.equal(response.body.error.code, 'RATE_LIMIT');
 });
-test('rejects pagination abuse and injection values', async () => {
+test('rejects unauthenticated pagination and injection probes', async () => {
   for (const query of ['limit=100000', 'page=-1', 'page=1%20OR%201=1', 'featured=yes']) {
-    await request(app()).get('/api/v1/news?' + query).expect(400);
+    await request(app()).get('/api/v1/news?' + query).expect(401);
   }
 });
 test('validates startup settings without echoing secret values', () => {

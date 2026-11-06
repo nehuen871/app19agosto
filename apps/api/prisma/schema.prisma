@@ -22,16 +22,32 @@ model Account {
   blocked Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  calendarTickets CalendarAuthorizationTicket[]
+  refreshTokens AuthRefreshToken[]
   sessions AuthSession[]
   nativeTickets NativeLoginTicket[]
 }
 model AuthSession {
   tokenHash String @id
+  familyId String?
   accountId String
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
   purpose SessionPurpose
   expiresAt DateTime
   createdAt DateTime @default(now())
+  @@index([accountId])
+  @@index([expiresAt])
+  @@index([familyId])
+}
+model AuthRefreshToken {
+  tokenHash String @id
+  familyId String
+  accountId String
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([familyId])
   @@index([accountId])
   @@index([expiresAt])
 }
@@ -106,7 +122,19 @@ enum EventColor {
   LIGHT_BLUE
   CYAN_GRAY
 }
+model CalendarAuthorizationTicket {
+  tokenHash String @id
+  accountId String
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  eventId String
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  purpose SessionPurpose
+  expiresAt DateTime
+  @@index([accountId])
+  @@index([expiresAt])
+}
 model CalendarEvent {
+  authorizationTickets CalendarAuthorizationTicket[]
   id String @id @default(uuid())
   title String @db.VarChar(160)
   description String

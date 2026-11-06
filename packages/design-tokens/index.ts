@@ -75,6 +75,8 @@ export const brandMark = {
 /** Shared component treatments: 2px focus ring for keyboard visibility;
  * shadows derive from brand black and the existing spacing scale. */
 export const componentTokens = {
+  // Leave a visible backdrop beside the account panel on compact screens.
+  accountSidebarWidth: '86%' as const,
   borderWidth: 1,
   focusWidth: 2,
   focusOffset: 2,

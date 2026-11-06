@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, AppState, Platform, Text, View } from 'react-native';
 import { brand, colors, typography, spacing } from '@utn/design-tokens';
 import { BrandMark, styles } from '../components/ui';
+import { AccountMenu } from '../components/account-menu';
 import { AuthProvider, useAuth } from '../services/auth';
 const client = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 2 } } });
 
@@ -37,6 +38,7 @@ function AppStack() {
   if (!auth.ready) return <View style={styles.launch}><BrandMark variant="isologo" /><ActivityIndicator color={colors.light.headerForeground} accessibilityLabel="Verificando tu sesión…" /></View>;
   return (
     <Stack screenOptions={{
+      headerLeft: auth.user ? () => <AccountMenu /> : undefined, headerBackVisible: true,
       title: 'UTN FRBA', headerTitle: () => <BrandMark />, headerTitleAlign: 'left',
       headerStyle: { backgroundColor: colors.light.header }, headerTintColor: colors.light.headerForeground,
       headerTitleStyle: typography.label, contentStyle: { backgroundColor: colors.light.background },

@@ -1,3 +1,5 @@
+import { readerAuth } from './reader-auth';
+import { adminEmailAllowed, appEmailAllowed } from './auth';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
@@ -8,22 +10,43 @@ const cookieName = 'utn_google_state';
 export function googleCalendarConfigured() { return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI); }
 export function googleCalendarRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
   const router = Router();
-  const states = new Map<string, { eventId: string; month: string; verifier: string; expiresAt: number }>();
+  router.use((_req, res, next) => { res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); next(); });
+  const states = new Map<string, { eventId: string; month: string; verifier: string; expiresAt: number; accountId: string; purpose: string }>();
   router.get('/config', (_req, res) => res.json({ enabled: googleCalendarConfigured(), startUrl: googleCalendarConfigured() ? new URL('/api/v1/google-calendar/start', process.env.APP_PUBLIC_URL ?? 'http://localhost:8081').href : null }));
-  router.use(rateLimit({ windowMs: 60000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false }));
+  router.use(rateLimit({ windowMs: 60000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false }));
   const cookieOptions = () => ({ httpOnly: true, sameSite: 'lax' as const, secure: process.env.GOOGLE_REDIRECT_URI?.startsWith('https://') ?? false, path: '/api/v1/google-calendar' });
   const resultUrl = (result: string, month?: string) => { const url = new URL('/calendar', process.env.APP_PUBLIC_URL ?? 'http://localhost:8081'); url.searchParams.set('googleResult', result); if (month) url.searchParams.set('month', month); return url.href; };
+  router.post('/authorize', readerAuth(db), async (req, res) => {
+    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+    if (!req.get('authorization') && req.get('origin') !== (process.env.APP_PUBLIC_URL ?? 'http://localhost:8081')) { res.sendStatus(403); return; }
+    const { eventId } = z.object({ eventId: z.uuid() }).strict().parse(req.body);
+    if (!googleCalendarConfigured()) { res.sendStatus(503); return; }
+    const event = await db.calendarEvent.findFirst({ where: { id: eventId, status: 'PUBLISHED', endsAt: { gt: new Date() } }, select: { id: true } });
+    if (!event) { res.sendStatus(404); return; }
+    await db.calendarAuthorizationTicket.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+    const ticket = randomBytes(32).toString('base64url');
+    await db.calendarAuthorizationTicket.create({ data: { tokenHash: hash(ticket), accountId: res.locals.accountId, eventId, purpose: res.locals.sessionPurpose, expiresAt: new Date(Date.now() + 60000) } });
+    const url = new URL('/api/v1/google-calendar/start', process.env.APP_PUBLIC_URL ?? 'http://localhost:8081'); url.searchParams.set('ticket', ticket);
+    res.json({ startUrl: url.href });
+  });
   router.get('/start', async (req, res) => {
     res.set('Cache-Control', 'no-store');
     if (!googleCalendarConfigured()) { res.status(503).json({ error: { code: 'GOOGLE_UNAVAILABLE', message: 'Falta configurar la conexión con Google Calendar.', details: [] } }); return; }
-    const eventId = z.uuid().parse(req.query.eventId);
+    res.set('Referrer-Policy', 'no-referrer');
+    const input = z.object({ ticket: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }).strict().safeParse(req.query);
+    if (!input.success) { res.sendStatus(401); return; }
+    const ticket = await db.calendarAuthorizationTicket.findUnique({ where: { tokenHash: hash(input.data.ticket) }, include: { account: true } });
+    if (!ticket || ticket.expiresAt <= new Date() || ticket.account.blocked || (ticket.purpose === 'ADMIN' ? ticket.account.role !== 'ADMIN' || !adminEmailAllowed(ticket.account.email) : !appEmailAllowed(ticket.account.email))) { res.sendStatus(401); return; }
+    const claimed = await db.calendarAuthorizationTicket.deleteMany({ where: { tokenHash: ticket.tokenHash, expiresAt: { gt: new Date() } } });
+    if (!claimed.count) { res.sendStatus(401); return; }
+    const eventId = ticket.eventId;
     const event = await db.calendarEvent.findFirst({ where: { id: eventId, status: 'PUBLISHED', endsAt: { gt: new Date() } } });
     if (!event) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Evento no disponible.', details: [] } }); return; }
     for (const [key, value] of states) if (value.expiresAt < Date.now()) states.delete(key);
     if (states.size >= 1000) { res.sendStatus(503); return; }
     const state = randomBytes(32).toString('base64url'), verifier = randomBytes(32).toString('base64url');
     const month = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(event.startsAt).slice(0, 7);
-    states.set(hash(state), { eventId, month, verifier, expiresAt: Date.now() + 600000 });
+    states.set(hash(state), { eventId, month, verifier, expiresAt: Date.now() + 600000, accountId: ticket.accountId, purpose: ticket.purpose });
     res.cookie(cookieName, state, { ...cookieOptions(), maxAge: 600000 });
     const authorization = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     authorization.search = new URLSearchParams({
@@ -45,6 +68,8 @@ export function googleCalendarRouter(db: PrismaClient, fetcher: typeof fetch = f
     states.delete(stateKey); res.clearCookie(cookieName, cookieOptions());
     if (query.data.error || !query.data.code) { res.redirect(resultUrl('cancelled', state.month)); return; }
     try {
+      const account = await db.account.findUnique({ where: { id: state.accountId } });
+      if (!account || account.blocked || (state.purpose === 'ADMIN' ? account.role !== 'ADMIN' || !adminEmailAllowed(account.email) : !appEmailAllowed(account.email))) { res.redirect(resultUrl('invalid', state.month)); return; }
       const tokenResponse = await fetcher('https://oauth2.googleapis.com/token', {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(10000),
         body: new URLSearchParams({ code: query.data.code, client_id: process.env.GOOGLE_CLIENT_ID!, client_secret: process.env.GOOGLE_CLIENT_SECRET!, redirect_uri: process.env.GOOGLE_REDIRECT_URI!, grant_type: 'authorization_code', code_verifier: state.verifier }),
@@ -67,7 +92,7 @@ export function googleCalendarRouter(db: PrismaClient, fetcher: typeof fetch = f
         }),
       });
       if (!inserted.ok && inserted.status !== 409) throw new Error('GOOGLE_INSERT');
-      await db.auditLog.create({ data: { actor: 'google:' + hash(identity.sub).slice(0, 16), action: 'EVENT_GOOGLE_SAVED', entityId: event.id } });
+      await db.auditLog.create({ data: { actor: state.accountId, action: 'EVENT_GOOGLE_SAVED', entityId: event.id } });
       res.redirect(resultUrl(inserted.status === 409 ? 'exists' : 'saved', state.month));
     } catch { res.redirect(resultUrl('failed', state.month)); }
     // Access tokens remain only in this request; refresh tokens are never requested.

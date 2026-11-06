@@ -1,3 +1,4 @@
+import { readerAuth } from './reader-auth';
 import { authRouter } from './auth';
 import { pushRouter } from './push';
 import { mediaRouter } from './media';
@@ -36,6 +37,7 @@ export function createApp(db: PrismaClient, options: { googleFetch?: typeof fetc
   });
   app.use(express.json({ limit: '32kb' }));
   app.use('/api/v1/auth', authRouter(db, options.googleFetch));
+  app.use(['/api/v1/news', '/api/v1/categories', '/api/v1/events'], readerAuth(db));
   app.use('/api/v1', eventsRouter(db));
   app.use('/api/v1/google-calendar', googleCalendarRouter(db, options.googleFetch));
   app.use('/api/v1/push', pushRouter(db));

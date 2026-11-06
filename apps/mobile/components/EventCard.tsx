@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Linking } from 'react-native';
+import { api } from '../services/api';
+import { Linking, Platform } from 'react-native';
 import { calendarTimeZone, googleCalendarUrl, type CalendarEvent } from '@utn/api-client';
 import { calendarColors } from '@utn/design-tokens';
 import { eventAccepted, rememberEvent } from '../services/event-acceptance';
@@ -10,7 +11,7 @@ export function EventCard({ event, googleStartUrl }: { event: CalendarEvent; goo
   useEffect(() => { setAccepted(eventAccepted(event.id)); }, [event.id]);
   async function accept() {
     setBusy(true); setError('');
-    try { await Linking.openURL(googleStartUrl ? `${googleStartUrl}?eventId=${encodeURIComponent(event.id)}` : googleCalendarUrl(event)); rememberEvent(event.id); setAccepted(true); }
+    try { const url = googleStartUrl ? (await api.authorizeCalendar(event.id)).startUrl : googleCalendarUrl(event); if (Platform.OS === 'web') window.location.assign(url); else await Linking.openURL(url); rememberEvent(event.id); setAccepted(true); }
     catch { setError('No pudimos abrir Google Calendar. Volvé a intentar.'); }
     finally { setBusy(false); }
   }

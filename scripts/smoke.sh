@@ -7,19 +7,19 @@ for service in api admin mobile; do
   if [ "$service" = api ]; then
     curl -fsS "http://$address/health/live" >/dev/null
     curl -fsS "http://$address/health/ready" >/dev/null
-    curl -fsS "http://$address/api/v1/news?limit=1" >/dev/null
+    test "$(curl -sS -o /dev/null -w '%{http_code}' "http://$address/api/v1/news?limit=1")" = 401
     curl -fsS "http://$address/api/v1/push/config" >/dev/null
-    curl -fsS "http://$address/api/v1/events?month=$(date +%Y-%m)&limit=1" >/dev/null
+    test "$(curl -sS -o /dev/null -w '%{http_code}' "http://$address/api/v1/events?month=$(date +%Y-%m)&limit=1")" = 401
     curl -fsS "http://$address/api/v1/google-calendar/config" >/dev/null
     curl -fsS "http://$address/api/v1/auth/config" >/dev/null
   elif [ "$service" = mobile ]; then
     curl -fsS "http://$address/" >/dev/null
-    curl -fsS "http://$address/api/v1/news?limit=1" >/dev/null
+    test "$(curl -sS -o /dev/null -w '%{http_code}' "http://$address/api/v1/news?limit=1")" = 401
     curl -fsS "http://$address/api/v1/push/config" >/dev/null
     curl -fsS "http://$address/push-sw.js" >/dev/null
     curl -fsS "http://$address/calendar" >/dev/null
     curl -fsS "http://$address/account" >/dev/null
-    curl -fsS "http://$address/api/v1/events?month=$(date +%Y-%m)&limit=1" >/dev/null
+    test "$(curl -sS -o /dev/null -w '%{http_code}' "http://$address/api/v1/events?month=$(date +%Y-%m)&limit=1")" = 401
     curl -fsS "http://$address/api/v1/google-calendar/config" >/dev/null
     curl -fsS "http://$address/api/v1/auth/config" >/dev/null
   else

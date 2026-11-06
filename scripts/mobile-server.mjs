@@ -3,21 +3,22 @@ const apiInternalUrl = (process.env.API_INTERNAL_URL ?? 'http://api:4000').repla
 const app = express();
 app.disable('x-powered-by');
 app.get('/health/live', (_req, res) => res.json({ status: 'ok' }));
-// Public reads and explicit OAuth endpoints use the same origin. Browser traffic uses the same origin.
+// Protected reads forward the browser session; OAuth entry points remain public.
 app.get(['/api/v1/news', '/api/v1/news/:slug', '/api/v1/categories', '/api/v1/events'], async (req, res) => {
   try {
-    const upstream = await fetch(`${apiInternalUrl}${req.originalUrl}`, { signal: AbortSignal.timeout(10000) });
-    res.status(upstream.status).type('application/json').send(await upstream.text());
+    const upstream = await fetch(`${apiInternalUrl}${req.originalUrl}`, { headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(10000) });
+    res.status(upstream.status).set('Cache-Control', 'private, no-store').type('application/json').send(await upstream.text());
   } catch { res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'El servicio no está disponible.', details: [] } }); }
 });
 app.get('/api/v1/media/:id', async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
   if (!/^[a-f0-9-]{36}$/.test(req.params.id)) { res.sendStatus(404); return; }
   try {
-    const response = await fetch(`${apiInternalUrl}${req.path}`, { signal: AbortSignal.timeout(10000) });
+    const response = await fetch(`${apiInternalUrl}${req.path}`, { headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(10000) });
     if (!response.ok) { res.sendStatus(response.status); return; }
     const type = response.headers.get('Content-Type');
     if (!['image/png', 'image/jpeg'].includes(type)) { res.sendStatus(502); return; }
-    res.set({ 'Content-Type': type, 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' }).send(Buffer.from(await response.arrayBuffer()));
+    res.set({ 'Content-Type': type, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }).send(Buffer.from(await response.arrayBuffer()));
   } catch { res.sendStatus(503); }
 });
 app.get('/api/v1/push/config', async (_req, res) => {
@@ -45,7 +46,19 @@ app.get(['/api/v1/auth/config', '/api/v1/auth/google/start', '/api/v1/auth/googl
   } catch { res.sendStatus(503); }
 });
 app.use(express.json({ limit: '8kb' }));
-app.post('/api/v1/auth/logout', async (req, res) => {
+app.post('/api/v1/google-calendar/authorize', async (req, res) => {
+  try {
+    const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
+    res.status(response.status).set('Cache-Control', 'no-store').type('application/json').send(await response.text());
+  } catch { res.sendStatus(503); }
+});
+app.patch('/api/v1/auth/me', async (req, res) => {
+  try {
+    const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
+    res.status(response.status).set('Cache-Control', 'no-store').type('application/json').send(await response.text());
+  } catch { res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'No pudimos guardar tu perfil.', details: [] } }); }
+});
+app.post(['/api/v1/auth/logout', '/api/v1/auth/refresh'], async (req, res) => {
   try {
     const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: '{}', signal: AbortSignal.timeout(10000) });
     res.status(response.status).set('Cache-Control', 'no-store');

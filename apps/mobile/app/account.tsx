@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
+import { ProfileForm } from '../components/profile-form';
 import { GoogleLoginCard } from '../components/google-login-card';
 import { AppNavigation } from '../components/AppNavigation';
 import { Avatar, Body, Button, Card, CardHeader, CardFooter, Heading, LoadingIndicator, useScreenContentStyle, styles } from '../components/ui';
@@ -21,6 +22,6 @@ export default function AccountScreen() {
     <>{auth.user && <AppNavigation current="account" />}</><Heading>{auth.user ? 'Mi cuenta' : 'Bienvenido a 19 de Agosto'}</Heading>
     {result ? <Body>{result}</Body> : null}
     {auth.error ? <View accessibilityRole="alert" style={styles.notice}><Body>{auth.error}</Body><Button title="Reintentar" onPress={() => void auth.refresh()} disabled={auth.busy} /></View> : null}
-    {auth.busy ? <LoadingIndicator title="Consultando tu cuenta…" /> : auth.user ? <Card><CardHeader><Avatar name={auth.user.name} /><Heading level={2}>{auth.user.name}</Heading><Body small muted>{auth.user.email}</Body></CardHeader><CardFooter><Button title="Ver noticias" onPress={() => router.replace('/')} /><Button title="Cerrar sesión" variant="outline" onPress={() => void auth.logout()} /></CardFooter></Card> : <GoogleLoginCard />}
+    {auth.busy && !auth.user ? <LoadingIndicator title="Consultando tu cuenta…" /> : auth.user ? <Card><CardHeader><Avatar name={auth.user.name} /><Heading level={2}>{auth.user.name}</Heading><Body small muted>{auth.user.email}</Body></CardHeader><CardFooter><Button title="Ver noticias" onPress={() => router.replace('/')} /><ProfileForm key={auth.user.id} initialName={auth.user.name} /></CardFooter></Card> : <GoogleLoginCard />}
   </ScrollView>;
 }

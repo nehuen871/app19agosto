@@ -117,3 +117,16 @@ main { min-width: 0; }
 .button-success { background: var(--success); border-color: var(--success); color: var(--primaryForeground); }
 .button-danger { background: var(--error); border-color: var(--error); color: var(--primaryForeground); }
 .news-visibility-action { display: grid; gap: var(--space-sm); }
+
+.notification-metrics { display: flex; flex-wrap: wrap; gap: var(--space-md); margin: 0; padding-block: var(--space-md); border-block: 1px solid var(--border); }
+.notification-metrics > div { flex: 1; min-width: 0; display: grid; gap: var(--space-xs); }
+.notification-metrics dt { font-size: var(--bodySmall-size); line-height: var(--bodySmall-height); overflow-wrap: anywhere; }
+.notification-metrics dd { margin: 0; font: var(--heading3-weight) var(--heading3-size)/var(--heading3-height) var(--heading3-font), sans-serif; font-variant-numeric: tabular-nums; }
+
+.header-account-brand { display: flex; align-items: center; gap: var(--space-sm); }
+.account-trigger { display: inline-flex; align-items: center; justify-content: center; min-width: var(--touch-target); min-height: var(--touch-target); padding: var(--space-sm); color: var(--headerForeground); background: transparent; border-color: transparent; }
+.account-sidebar { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(calc(var(--reading-max) / 2), calc(100% - var(--space-lg))); max-width: none; height: 100dvh; max-height: none; padding: 0; border: 0; background: var(--surface); color: var(--foreground); overflow-y: auto; }
+.account-sidebar::backdrop { background: color-mix(in srgb, var(--foreground) 40%, transparent); }
+.account-sidebar-content { display: grid; gap: var(--space-lg); padding: var(--space-lg); padding-top: max(var(--space-lg), env(safe-area-inset-top)); padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
+.account-sidebar-content form { display: grid; gap: var(--space-md); }
+.account-menu-link { display: flex; align-items: center; justify-content: center; min-height: var(--touch-target); border: 1px solid var(--primary); border-radius: var(--radius-md); padding: var(--space-md); text-decoration: none; font-weight: var(--label-weight); }

@@ -28,7 +28,7 @@ test('saves draft atomically and keeps it out of public news', async () => {
   assert.equal(response.body.status, 'DRAFT');
   assert.equal(response.body.publishedAt, null);
   assert.equal((await db.auditLog.findFirstOrThrow({ where: { entityId: response.body.id } })).action, 'NEWS_CREATED');
-  await request(app).get(`/api/v1/news/${prefix}`).expect(404);
+  await request(app).get(`/api/v1/news/${prefix}`).set('Authorization', `Bearer ${token}`).expect(404);
 });
 test('rejects duplicate slug and tampered or unsafe fields', async () => {
   await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send(input).expect(409);
@@ -39,7 +39,7 @@ test('rejects duplicate slug and tampered or unsafe fields', async () => {
 test('published news is visible in the app and saving never sends push', async () => {
   const response = await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send({ ...input, slug: `${prefix}-published`, status: 'PUBLISHED' }).expect(201);
   ids.push(response.body.id);
-  const detail = await request(app).get(`/api/v1/news/${prefix}-published`).expect(200);
+  const detail = await request(app).get(`/api/v1/news/${prefix}-published`).set('Authorization', `Bearer ${token}`).expect(200);
   assert.equal(detail.body.content, input.content);
   assert.equal(await db.notification.count({ where: { newsId: response.body.id } }), 0);
   const list = await request(app).get('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).expect(200);

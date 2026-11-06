@@ -1,17 +1,16 @@
+import { session as appSession } from './session';
 import { apiUrl } from './environment';
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { AuthRequestError, createAuthApiClient, type AuthUser, type GoogleLoginConfig } from '@utn/api-client';
 
-const api = createAuthApiClient(apiUrl);
-const storageKey = 'utn.google.session';
+const api = createAuthApiClient(apiUrl, 'APP', appSession.fetch);
 const returnUrl = 'utnfrba://account';
-type AuthState = { user: AuthUser | null; ready: boolean; busy: boolean; error: string; refresh: () => Promise<void>; login: (config: GoogleLoginConfig) => Promise<void>; logout: () => Promise<void> };
+type AuthState = { user: AuthUser | null; ready: boolean; busy: boolean; error: string; refresh: () => Promise<void>; login: (config: GoogleLoginConfig) => Promise<void>; logout: () => Promise<boolean>; updateProfile: (name: string) => Promise<void> };
 const AuthContext = createContext<AuthState | null>(null);
 function base64url(bytes: Uint8Array) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -22,22 +21,22 @@ function base64url(bytes: Uint8Array) {
 }
 export function AuthProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
+  const sessionGeneration = useRef(0);
   function clearAppCache() { queryClient.clear(); }
   const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null), [token, setToken] = useState<string | null>(null), [busy, setBusy] = useState(true), [error, setError] = useState('');
+  const [user, setUser] = useState<AuthUser | null>(null), [busy, setBusy] = useState(true), [error, setError] = useState('');
   async function refresh() {
     setBusy(true); setError('');
     try {
-      const saved = Platform.OS === 'web' ? null : await SecureStore.getItemAsync(storageKey);
-      setToken(saved);
-      const session = await api.me(saved); setUser(session.user);
+      const session = await api.me(); setUser(session.user);
     } catch (cause) {
       if (cause instanceof AuthRequestError && cause.status === 401) {
-        setUser(null); setToken(null); clearAppCache();
-        if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(storageKey);
+        sessionGeneration.current++; setUser(null); clearAppCache();
+
       } else setError('No pudimos consultar tu sesión. Revisá tu conexión y reintentá.');
     } finally { setReady(true); setBusy(false); }
   }
+  useEffect(() => appSession.subscribe(() => { sessionGeneration.current++; setUser(null); clearAppCache(); }), []);
   useEffect(() => { void refresh(); }, []);
   async function login(config: GoogleLoginConfig) {
     if (!config.startUrl || !config.enabled) return;
@@ -53,17 +52,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (incoming.protocol !== 'utnfrba:' || incoming.hostname !== 'account' || incoming.searchParams.get('nativeState') !== state || incoming.searchParams.get('authResult') !== 'signed-in') { setError('No pudimos autorizar esta cuenta. Intentá nuevamente.'); return; }
       const ticket = incoming.searchParams.get('ticket'); if (!ticket) throw new Error('ticket');
       const session = await api.exchange(ticket, verifier);
-      await SecureStore.setItemAsync(storageKey, session.token);
-      setToken(session.token); setUser(session.user); router.replace('/');
+      await appSession.setCredentials({ token: session.token, refreshToken: session.refreshToken });
+      setUser(session.user); router.replace('/');
     } catch { setError('No pudimos iniciar sesión. Revisá tu conexión e intentá nuevamente.'); }
     finally { setBusy(false); }
   }
+  async function updateProfile(name: string) {
+    const generation = sessionGeneration.current;
+    const result = await api.updateProfile(name);
+    if (generation !== sessionGeneration.current || result.user.id !== user?.id) throw new Error('La sesión cambió. Volvé a ingresar antes de guardar.');
+    setUser(result.user);
+  }
   async function logout() {
     setBusy(true); setError('');
-    try { await api.logout(token); if (Platform.OS !== 'web') await SecureStore.deleteItemAsync(storageKey); setToken(null); setUser(null); clearAppCache(); }
-    catch { setError('No pudimos cerrar la sesión. Revisá tu conexión y reintentá.'); }
+    try { const credentials = await appSession.credentials(); await api.logout(undefined, credentials?.refreshToken); await appSession.clear(); sessionGeneration.current++; setUser(null); clearAppCache(); return true; }
+    catch { setError('No pudimos cerrar la sesión. Revisá tu conexión y reintentá.'); return false; }
     finally { setBusy(false); }
   }
-  return <AuthContext.Provider value={{ user, ready, busy, error, refresh, login, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, ready, busy, error, refresh, login, logout, updateProfile }}>{children}</AuthContext.Provider>;
 }
 export function useAuth() { const value = useContext(AuthContext); if (!value) throw new Error('AuthProvider required'); return value; }

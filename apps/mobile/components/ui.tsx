@@ -86,6 +86,15 @@ export function LoadingIndicator({ title = 'Cargando noticias…' }: { title?: s
   return <View accessibilityRole="progressbar" accessibilityLabel={title} style={styles.state}><ActivityIndicator color={theme.primary} /><Body>{title}</Body></View>;
 }
 export const styles = StyleSheet.create({
+  accountTrigger: { minWidth: layout.touchTarget, minHeight: layout.touchTarget, alignItems: 'center', justifyContent: 'center' },
+  accountIcon: { width: spacing.lg, alignItems: 'center', gap: spacing.xs },
+  accountIconHead: { width: spacing.sm, height: spacing.sm, borderWidth: componentTokens.focusWidth, borderColor: theme.headerForeground, borderRadius: radius.full },
+  accountIconBody: { width: spacing.lg, height: spacing.md, borderWidth: componentTokens.focusWidth, borderColor: theme.headerForeground, borderRadius: radius.lg },
+  accountOverlay: { flex: 1 },
+  accountBackdrop: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: `${theme.foreground}66` },
+  accountSidebar: { width: componentTokens.accountSidebarWidth, maxWidth: layout.readingMax / 2, height: '100%', backgroundColor: theme.surface },
+  accountSidebarContent: { padding: spacing.lg, gap: spacing.lg },
+  profileInput: { ...typography.body, color: theme.foreground, backgroundColor: theme.surface, borderWidth: componentTokens.borderWidth, borderColor: theme.border, borderRadius: radius.md, minHeight: layout.touchTarget, padding: spacing.md },
   page: { flex: 1, backgroundColor: theme.editorial },
   section: { gap: spacing.lg },
   navigation: { flexDirection: 'row', gap: spacing.xs, backgroundColor: theme.surface, padding: spacing.xs, borderRadius: radius.full, borderWidth: componentTokens.borderWidth, borderColor: theme.border },

@@ -1,22 +1,27 @@
+export * from './session';
 import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage } from '@utn/types';
 export * from './calendar';
 export * from './auth';
-export type { CalendarEvent, EventInput, EventColor } from '@utn/types';
+export type { CalendarEvent, EventInput, EventColor, Notification } from '@utn/types';
 
-export function createApiClient(baseUrl: string) {
+export function createApiClient(baseUrl: string, options: { fetcher?: typeof fetch; token?: string } = {}) {
   function cover(news: News): News {
     return news.coverImageUrl?.startsWith('/api/v1/media/') && /^https?:\/\//.test(baseUrl) ? { ...news, coverImageUrl: new URL(news.coverImageUrl, baseUrl).href } : news;
   }
-  async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+  async function get<T>(path: string, signal?: AbortSignal, init: RequestInit = {}): Promise<T> {
+    const headers = new Headers(init.headers);
+    if (options.token) headers.set('Authorization', `Bearer ${options.token}`);
     const controller = new AbortController();
     const abort = () => controller.abort();
     if (signal?.aborted) abort();
     else signal?.addEventListener('abort', abort, { once: true });
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
-      const response = await fetch(`${baseUrl}${path}`, {
+      const response = await (options.fetcher ?? fetch)(`${baseUrl}${path}`, {
+        ...init,
         signal: controller.signal,
-        cache: 'no-store',
+        cache: 'no-store', credentials: 'include',
+        headers,
       });
       if (!response.ok) {
         throw new Error('No se pudo cargar la información. Intentá nuevamente.');
@@ -33,6 +38,7 @@ export function createApiClient(baseUrl: string) {
     detail: async (slug: string, signal?: AbortSignal) => cover(await get<News>(`/news/${encodeURIComponent(slug)}`, signal)),
     categories: () => get<Category[]>('/categories'),
     events: (month: string, page = 1, signal?: AbortSignal) => get<Page<CalendarEvent>>(`/events?month=${encodeURIComponent(month)}&page=${page}`, signal),
+    authorizeCalendar: (eventId: string) => get<{ startUrl: string }>('/google-calendar/authorize', undefined, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId }) }),
     googleCalendarConfig: (signal?: AbortSignal) => get<{ enabled: boolean; startUrl: string | null }>('/google-calendar/config', signal),
   };
 }
@@ -63,6 +69,7 @@ export function createAdminApiClient(baseUrl: string, accessToken: string) {
     return response.json() as Promise<T>;
   }
   return {
+    publishedNews: () => createApiClient(baseUrl, { token: accessToken }).news(),
     events: (page = 1) => request<Page<CalendarEvent>>(`?page=${page}`, undefined, 'events'),
     createEvent: (data: EventInput) => request<CalendarEvent>('', data, 'events'),
     updateEvent: (id: string, data: EventInput) => request<CalendarEvent>(`/${encodeURIComponent(id)}`, data, 'events', 'PATCH'),

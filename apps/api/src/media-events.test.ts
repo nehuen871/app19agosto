@@ -33,13 +33,14 @@ test('image upload enforces authorization, types, signatures, size and dimension
 test('uploaded image persists and can be attached to published news and served safely', async () => {
   const uploaded = await request(app).post('/api/v1/admin/media').set('Authorization', `Bearer ${token}`).set('Content-Type', 'image/png').send(png).expect(201);
   imageIds.push(uploaded.body.id);
-  const image = await request(app).get(uploaded.body.url).expect(200);
+  await request(app).get(uploaded.body.url).expect(401);
+  const image = await request(app).get(uploaded.body.url).set('Authorization', `Bearer ${token}`).expect(200);
   assert.equal(image.headers['content-type'], 'image/png'); assert.equal(image.headers['x-content-type-options'], 'nosniff');
   assert.ok(Buffer.from(image.body).equals(png));
   const input = { title: 'Imagen persistente', slug: prefix, category: prefix, summary: 'Resumen', content: 'Texto', coverImageId: uploaded.body.id, status: 'PUBLISHED' };
   const created = await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send(input).expect(201);
   newsIds.push(created.body.id); assert.equal(created.body.coverImageUrl, uploaded.body.url);
-  const detail = await request(app).get('/api/v1/news/' + prefix).expect(200); assert.equal(detail.body.coverImageUrl, uploaded.body.url);
+  const detail = await request(app).get('/api/v1/news/' + prefix).set('Authorization', `Bearer ${token}`).expect(200); assert.equal(detail.body.coverImageUrl, uploaded.body.url);
   await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send({ ...input, slug: prefix + '-missing', coverImageId: randomUUID() }).expect(400);
   await request(app).get('/api/v1/media/../../.env').expect(404);
 });
@@ -53,7 +54,7 @@ test('event create/edit is protected and validates dates, colors and mass assign
 test('calendar includes overlapping events, hides drafts/cancelled and respects Argentine month boundaries', async () => {
   const created = await request(app).post('/api/v1/admin/events').set('Authorization', `Bearer ${token}`).send(input).expect(201);
   eventIds.push(created.body.id);
-  const list = async (month: string) => (await request(app).get('/api/v1/events?month=' + month).expect(200)).body.items as CalendarEvent[];
+  const list = async (month: string) => (await request(app).get('/api/v1/events?month=' + month).set('Authorization', `Bearer ${token}`).expect(200)).body.items as CalendarEvent[];
   assert.ok(!(await list('2030-06')).some(item => item.id === created.body.id));
   const published = await request(app).patch('/api/v1/admin/events/' + created.body.id).set('Authorization', `Bearer ${token}`).send({ ...input, status: 'PUBLISHED' }).expect(200);
   assert.equal(published.body.description, input.description);
@@ -61,7 +62,7 @@ test('calendar includes overlapping events, hides drafts/cancelled and respects 
   assert.ok((await list('2030-07')).some(item => item.id === created.body.id));
   await request(app).patch('/api/v1/admin/events/' + created.body.id).set('Authorization', `Bearer ${token}`).send({ ...input, status: 'CANCELLED' }).expect(200);
   assert.ok(!(await list('2030-07')).some(item => item.id === created.body.id));
-  for (const query of ['month=2030-13', 'month=2030-07&limit=100000', 'month=2030-07&page=-1']) await request(app).get('/api/v1/events?' + query).expect(400);
+  for (const query of ['month=2030-13', 'month=2030-07&limit=100000', 'month=2030-07&page=-1']) await request(app).get('/api/v1/events?' + query).set('Authorization', `Bearer ${token}`).expect(400);
 });
 test('calendar day grid and Google event dates preserve month rollover and midnight exclusions', () => {
   assert.equal(calendarMonthShift('2026-12', 1), '2027-01'); assert.equal(calendarMonthShift('2027-01', -1), '2026-12');

@@ -1,3 +1,4 @@
+import { createTestAdmin, removeTestAdmin, testAdminToken } from './test-admin';
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -5,6 +6,7 @@ import request from 'supertest';
 import { db } from './db';
 import { createApp } from './app';
 let eventId: string;
+const adminToken = testAdminToken();
 const calls: { url: string; body?: unknown }[] = [];
 let insertStatus = 200;
 const fetcher: typeof fetch = async (input, init) => {
@@ -16,13 +18,16 @@ const fetcher: typeof fetch = async (input, init) => {
 };
 const app = createApp(db, { googleFetch: fetcher });
 before(async () => {
+  await createTestAdmin(db, adminToken);
   process.env.GOOGLE_CLIENT_ID = 'test-client'; process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
   process.env.GOOGLE_REDIRECT_URI = 'http://localhost:8081/api/v1/google-calendar/callback'; process.env.APP_PUBLIC_URL = 'http://localhost:8081';
   eventId = (await db.calendarEvent.create({ data: { title: 'OAuth event', description: 'Test', location: 'Campus', startsAt: new Date('2035-01-01T15:00:00Z'), endsAt: new Date('2035-01-01T16:00:00Z'), status: 'PUBLISHED' } })).id;
 });
-after(async () => { await db.auditLog.deleteMany({ where: { entityId: eventId } }); await db.calendarEvent.delete({ where: { id: eventId } }); await db.$disconnect(); });
+after(async () => { await db.auditLog.deleteMany({ where: { entityId: eventId } }); await db.calendarEvent.delete({ where: { id: eventId } }); await removeTestAdmin(db, adminToken); await db.$disconnect(); });
 async function start() {
-  const response = await request(app).get('/api/v1/google-calendar/start?eventId=' + eventId).expect(302);
+  const issued = await request(app).post('/api/v1/google-calendar/authorize').set('Authorization', `Bearer ${adminToken}`).send({ eventId }).expect(200);
+  const startUrl = new URL(issued.body.startUrl);
+  const response = await request(app).get(startUrl.pathname + startUrl.search).expect(302);
   const url = new URL(response.headers.location);
   return { response, url, state: url.searchParams.get('state')!, cookie: response.headers['set-cookie'][0].split(';')[0] };
 }
@@ -33,7 +38,8 @@ test('Google OAuth start uses PKCE, a browser-bound expiring HttpOnly cookie and
   assert.equal(url.origin, 'https://accounts.google.com'); assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
   assert.equal(url.searchParams.get('redirect_uri'), process.env.GOOGLE_REDIRECT_URI); assert.ok(!url.searchParams.has('client_secret'));
   assert.match(response.headers['set-cookie'][0], /HttpOnly/); assert.match(response.headers['set-cookie'][0], /SameSite=Lax/);
-  await request(app).get('/api/v1/google-calendar/start?eventId=' + randomUUID()).expect(404);
+  await request(app).post('/api/v1/google-calendar/authorize').set('Authorization', `Bearer ${adminToken}`).send({ eventId: randomUUID() }).expect(404);
+  await request(app).get('/api/v1/google-calendar/start?eventId=' + eventId).expect(401);
 });
 test('rejects callback without the matching browser state and performs no Google calls', async () => {
   const { state } = await start();
@@ -59,4 +65,15 @@ test('denied consent never creates an event and returns to a fixed app URL', asy
   const { state, cookie } = await start(), count = calls.length;
   const response = await request(app).get('/api/v1/google-calendar/callback?state=' + state + '&error=access_denied&redirect=https://attacker.invalid').set('Cookie', cookie).expect(302);
   const url = new URL(response.headers.location); assert.equal(url.origin, 'http://localhost:8081'); assert.equal(url.searchParams.get('googleResult'), 'cancelled'); assert.equal(calls.length, count);
+});
+
+test('calendar authorization tickets require login, expire and can only be used once', async () => {
+  await request(app).post('/api/v1/google-calendar/authorize').send({ eventId }).expect(401);
+  const authorize = () => request(app).post('/api/v1/google-calendar/authorize').set('Authorization', `Bearer ${adminToken}`).send({ eventId });
+  const issued = await authorize().expect(200), url = new URL(issued.body.startUrl);
+  await request(app).get(url.pathname + url.search).expect(302);
+  await request(app).get(url.pathname + url.search).expect(401);
+  const expired = await authorize().expect(200), expiredUrl = new URL(expired.body.startUrl);
+  await db.calendarAuthorizationTicket.updateMany({ data: { expiresAt: new Date(0) } });
+  await request(app).get(expiredUrl.pathname + expiredUrl.search).expect(401);
 });

@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import localFont from 'next/font/local';
 import { colors, spacing, radius, typography, layout, brand, interaction, brandMark } from '@utn/design-tokens';
 import './style.css';
+import { AccountHeader } from './components/AccountHeader';
 import { BrandMark } from './components/BrandMark';
 
 const display = localFont({ src: '../../../packages/brand-assets/fonts/ArchivoBlack-Regular.ttf', weight: '400', display: 'swap', variable: '--font-display' });
@@ -32,7 +33,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <body style={vars as CSSProperties}>
       <a className="skip-link" href="#contenido">Saltar al contenido</a>
       <header className="site-header"><div className="header-inner">
-        <BrandMark />
+        <div className="header-account-brand"><AccountHeader /><BrandMark /></div>
         <span className="header-label">Comunicación institucional</span>
       </div></header>
       <nav className="admin-nav" aria-label="Administración"><a href="/admin">Noticias</a><a href="/admin/events">Calendario</a><a href="/admin/notifications">Notificaciones</a></nav>

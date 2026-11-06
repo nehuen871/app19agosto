@@ -1,5 +1,6 @@
-import { createHash, randomBytes } from 'node:crypto';
-import { Router, type Request } from 'express';
+import { accountProfileInput } from '@utn/validation';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { Router, type Request, type Response } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import type { PrismaClient } from './generated/prisma/client';
@@ -34,10 +35,48 @@ const bearer = (req: Request) => req.get('authorization')?.match(/^Bearer (utn_s
 function identity(account: { id: string; name: string; email: string; role: string }) {
   return { id: account.id, name: account.name, email: account.email, role: account.role };
 }
+const appLifetime = 15 * 60000;
+const refreshLifetime = 7 * 24 * 3600000;
+const refreshInput = z.object({ refreshToken: z.string().regex(/^utn_r_[A-Za-z0-9_-]{43}$/).optional() }).strict();
 async function issueSession(db: PrismaClient, accountId: string, purpose: Purpose) {
-  const token = 'utn_s_' + opaque(), expiresAt = new Date(Date.now() + (purpose === 'ADMIN' ? 8 : 24 * 7) * 3600000);
-  await db.authSession.create({ data: { tokenHash: hashToken(token), accountId, purpose, expiresAt } });
-  return { token, expiresAt };
+  const token = 'utn_s_' + opaque(), expiresAt = new Date(Date.now() + (purpose === 'ADMIN' ? 8 * 3600000 : appLifetime));
+  const familyId = purpose === 'APP' ? randomUUID() : null;
+  const refreshToken = familyId ? 'utn_r_' + opaque() : null;
+  const refreshExpiresAt = refreshToken ? new Date(Date.now() + refreshLifetime) : null;
+  await db.$transaction(async tx => {
+    await tx.authSession.create({ data: { tokenHash: hashToken(token), accountId, purpose, expiresAt, familyId } });
+    if (refreshToken && refreshExpiresAt && familyId) await tx.authRefreshToken.create({ data: { tokenHash: hashToken(refreshToken), accountId, familyId, expiresAt: refreshExpiresAt } });
+  });
+  return { token, expiresAt, refreshToken, refreshExpiresAt };
+}
+async function revokeFamily(db: PrismaClient, familyId: string) {
+  await db.$transaction([
+    db.authSession.deleteMany({ where: { familyId } }),
+    db.authRefreshToken.updateMany({ where: { familyId, consumedAt: null }, data: { consumedAt: new Date() } }),
+  ]);
+}
+function appCookies(res: Response, session: Awaited<ReturnType<typeof issueSession>>) {
+  const options = { httpOnly: true, secure: appOrigin().startsWith('https:'), sameSite: 'lax' as const };
+  res.clearCookie('utn_app_session', { ...options, path: '/api/v1/auth' });
+  res.cookie('utn_app_session', session.token, { ...options, path: '/api/v1', maxAge: Math.max(0, session.expiresAt.getTime() - Date.now()) });
+  if (session.refreshToken && session.refreshExpiresAt) res.cookie('utn_app_refresh', session.refreshToken, { ...options, path: '/api/v1/auth', maxAge: Math.max(0, session.refreshExpiresAt.getTime() - Date.now()) });
+}
+export async function rotateAppSession(db: PrismaClient, supplied: string | undefined) {
+  if (!supplied || !/^utn_r_[A-Za-z0-9_-]{43}$/.test(supplied)) return null;
+  const previous = await db.authRefreshToken.findUnique({ where: { tokenHash: hashToken(supplied) }, include: { account: true } });
+  if (!previous) return null;
+  if (previous.consumedAt || previous.expiresAt <= new Date() || previous.account.blocked || !appEmailAllowed(previous.account.email)) { await revokeFamily(db, previous.familyId); return null; }
+  const token = 'utn_s_' + opaque(), refreshToken = 'utn_r_' + opaque(), expiresAt = new Date(Math.min(Date.now() + appLifetime, previous.expiresAt.getTime()));
+  const rotated = await db.$transaction(async tx => {
+    const claimed = await tx.authRefreshToken.updateMany({ where: { tokenHash: previous.tokenHash, consumedAt: null, expiresAt: { gt: new Date() } }, data: { consumedAt: new Date() } });
+    if (!claimed.count) return false;
+    await tx.authSession.deleteMany({ where: { familyId: previous.familyId } });
+    await tx.authSession.create({ data: { tokenHash: hashToken(token), accountId: previous.accountId, purpose: 'APP', familyId: previous.familyId, expiresAt } });
+    await tx.authRefreshToken.create({ data: { tokenHash: hashToken(refreshToken), accountId: previous.accountId, familyId: previous.familyId, expiresAt: previous.expiresAt } });
+    return true;
+  });
+  if (!rotated) { await revokeFamily(db, previous.familyId); return null; }
+  return { token, refreshToken, expiresAt, refreshExpiresAt: previous.expiresAt, user: identity(previous.account) };
 }
 export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
   const router = Router();
@@ -55,6 +94,7 @@ export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
     await db.oAuthAttempt.deleteMany({ where: { expiresAt: { lte: new Date() } } });
     await db.nativeLoginTicket.deleteMany({ where: { expiresAt: { lte: new Date() } } });
     await db.authSession.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+    await db.authRefreshToken.deleteMany({ where: { expiresAt: { lte: new Date() } } });
     const state = opaque(), browser = opaque(), verifier = opaque();
     await db.oAuthAttempt.create({ data: { stateHash: hashToken(state), browserHash: hashToken(browser), verifier, purpose, nativeChallenge: query.nativeChallenge, nativeState: query.nativeState, expiresAt: new Date(Date.now() + 600000) } });
     res.cookie(stateCookie(purpose), browser, cookieOptions(purpose));
@@ -87,7 +127,7 @@ export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
       const info = z.object({ sub: z.string().min(1).max(255), email: z.email().max(320), email_verified: z.literal(true), name: z.string().max(200).optional() }).parse(await infoResponse.json());
       const email = info.email.toLowerCase();
       if (purpose === 'ADMIN' ? !adminEmailAllowed(email) : !appEmailAllowed(email)) { finish('denied'); return; }
-      const account = await db.account.upsert({ where: { googleSubject: info.sub }, create: { googleSubject: info.sub, email, name: info.name ?? email, role: purpose === 'ADMIN' ? 'ADMIN' : 'USER' }, update: { email, name: info.name ?? email } });
+      const account = await db.account.upsert({ where: { googleSubject: info.sub }, create: { googleSubject: info.sub, email, name: info.name ?? email, role: purpose === 'ADMIN' ? 'ADMIN' : 'USER' }, update: { email } });
       if (account.blocked) { finish('denied'); return; }
       if (purpose === 'ADMIN' && account.role !== 'ADMIN') await db.account.update({ where: { id: account.id }, data: { role: 'ADMIN' } });
       if (attempt.nativeChallenge) {
@@ -96,12 +136,21 @@ export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
         target.searchParams.set('ticket', ticket);
       } else {
         const session = await issueSession(db, account.id, purpose);
-        res.cookie(purpose === 'ADMIN' ? 'utn_admin_oauth' : 'utn_app_session', session.token, { httpOnly: true, secure: (purpose === 'ADMIN' ? adminOrigin() : appOrigin()).startsWith('https:'), sameSite: 'lax', path: purpose === 'ADMIN' ? '/admin' : '/api/v1/auth', maxAge: session.expiresAt.getTime() - Date.now() });
+        if (purpose === 'APP') appCookies(res, session);
+        else res.cookie('utn_admin_oauth', session.token, { httpOnly: true, secure: adminOrigin().startsWith('https:'), sameSite: 'lax', path: '/admin', maxAge: session.expiresAt.getTime() - Date.now() });
         if (purpose === 'ADMIN') target.pathname = '/admin';
       }
       await db.auditLog.create({ data: { actor: account.id, action: purpose === 'ADMIN' ? 'ADMIN_GOOGLE_LOGIN' : 'APP_GOOGLE_LOGIN', entityId: account.id } });
       finish('signed-in');
     } catch { finish('failed'); }
+  });
+  router.post('/refresh', async (req, res) => {
+    const input = refreshInput.parse(req.body);
+    if (!input.refreshToken && req.get('origin') !== appOrigin()) { res.sendStatus(403); return; }
+    const rotated = await rotateAppSession(db, input.refreshToken ?? cookieValue(req, 'utn_app_refresh'));
+    if (!rotated) { res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Tu sesión venció. Volvé a ingresar.', details: [] } }); return; }
+    if (input.refreshToken) res.json(rotated);
+    else { appCookies(res, rotated); res.json({ user: rotated.user, expiresAt: rotated.expiresAt.toISOString() }); }
   });
   router.post('/native/exchange', async (req, res) => {
     const input = z.object({ ticket: z.string().regex(/^[A-Za-z0-9_-]{43}$/), verifier: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }).strict().parse(req.body);
@@ -110,7 +159,7 @@ export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
     const consumed = await db.nativeLoginTicket.deleteMany({ where: { tokenHash: ticket.tokenHash, expiresAt: { gt: new Date() } } });
     if (!consumed.count) { res.sendStatus(401); return; }
     const session = await issueSession(db, ticket.accountId, 'APP');
-    res.json({ token: session.token, expiresAt: session.expiresAt.toISOString(), user: identity(ticket.account) });
+    res.json({ ...session, user: identity(ticket.account) });
   });
   for (const purpose of ['APP', 'ADMIN'] as const) {
     const prefix = purpose === 'ADMIN' ? '/admin' : '';
@@ -119,11 +168,42 @@ export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
       if (!session) { res.sendStatus(401); return; }
       res.json({ user: identity(session.account), expiresAt: session.expiresAt.toISOString() });
     });
+    router.patch(prefix + '/me', async (req, res) => {
+      const supplied = bearer(req);
+      if (!supplied && req.get('origin') !== appOrigin()) { res.sendStatus(403); return; }
+      const session = await findSession(db, supplied ?? (purpose === 'APP' ? cookieValue(req, 'utn_app_session') : undefined), purpose);
+      if (!session) { res.sendStatus(401); return; }
+      const input = accountProfileInput.parse(req.body);
+      const account = await db.$transaction(async tx => {
+        const updated = await tx.account.update({ where: { id: session.accountId }, data: { name: input.name } });
+        await tx.auditLog.create({ data: { actor: session.accountId, action: 'ACCOUNT_PROFILE_UPDATED', entityId: session.accountId } });
+        return updated;
+      });
+      res.json({ user: identity(account), expiresAt: session.expiresAt.toISOString() });
+    });
     router.post(prefix + '/logout', async (req, res) => {
-      const token = bearer(req) ?? (purpose === 'APP' ? cookieValue(req, 'utn_app_session') : undefined);
-      if (!bearer(req) && req.get('origin') !== appOrigin()) { res.sendStatus(403); return; }
-      if (token && /^utn_s_[A-Za-z0-9_-]{43}$/.test(token)) await db.authSession.deleteMany({ where: { tokenHash: hashToken(token), purpose } });
-      if (purpose === 'APP') res.clearCookie('utn_app_session', { path: '/api/v1/auth', httpOnly: true, sameSite: 'lax', secure: appOrigin().startsWith('https:') });
+      const input = refreshInput.parse(purpose === 'APP' ? (req.body ?? {}) : {});
+      const suppliedRefresh = input.refreshToken;
+      const access = bearer(req) ?? (purpose === 'APP' && !suppliedRefresh ? cookieValue(req, 'utn_app_session') : undefined);
+      if (!bearer(req) && !suppliedRefresh && req.get('origin') !== appOrigin()) { res.sendStatus(403); return; }
+      if (access && /^utn_s_[A-Za-z0-9_-]{43}$/.test(access)) {
+        const session = await db.authSession.findUnique({ where: { tokenHash: hashToken(access) } });
+        if (session?.purpose === purpose) {
+          if (session.familyId) await revokeFamily(db, session.familyId);
+          else await db.authSession.deleteMany({ where: { tokenHash: hashToken(access), purpose } });
+        }
+      }
+      if (purpose === 'APP') {
+        const refresh = suppliedRefresh ?? cookieValue(req, 'utn_app_refresh');
+        if (refresh && /^utn_r_[A-Za-z0-9_-]{43}$/.test(refresh)) {
+          const session = await db.authRefreshToken.findUnique({ where: { tokenHash: hashToken(refresh) } });
+          if (session) await revokeFamily(db, session.familyId);
+        }
+        const options = { httpOnly: true, sameSite: 'lax' as const, secure: appOrigin().startsWith('https:') };
+        res.clearCookie('utn_app_session', { ...options, path: '/api/v1' });
+        res.clearCookie('utn_app_session', { ...options, path: '/api/v1/auth' });
+        res.clearCookie('utn_app_refresh', { ...options, path: '/api/v1/auth' });
+      }
       res.sendStatus(204);
     });
   }

@@ -10,7 +10,7 @@ export async function endAdminSession() {
   const token = (await cookies()).get('utn_admin_oauth')?.value;
   if (token && /^utn_s_[A-Za-z0-9_-]{43}$/.test(token)) {
     const response = await fetch(`${apiUrl}/auth/admin/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: '{}', cache: 'no-store', signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error('No pudimos cerrar la sesión. Intentá nuevamente.');
+    if (!response.ok && response.status !== 401) throw new Error('No pudimos cerrar la sesión. Intentá nuevamente.');
   }
   (await cookies()).set('utn_admin_oauth', '', { httpOnly: true, path: '/admin', maxAge: 0 });
 }
