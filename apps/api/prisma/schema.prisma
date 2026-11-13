@@ -184,6 +184,7 @@ model AuditLog {
 
 model PushSubscription {
   id String @id @default(cuid())
+  provider String @default("web")
   endpointHash String @unique
   subscription Json
   revokeHash String
@@ -202,6 +203,9 @@ model PushDelivery {
   status String @default("QUEUED")
   claimedAt DateTime?
   errorCode String?
+  expoTicketId String?
+  receiptCheckAt DateTime?
   @@unique([notificationId, subscriptionId])
   @@index([status])
+  @@index([status, receiptCheckAt])
 }

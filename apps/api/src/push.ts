@@ -4,6 +4,8 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import webPush from 'web-push';
 import type { PrismaClient } from './generated/prisma/client';
+import { readerAuth } from './reader-auth';
+import { createExpoTransport, expoPushConfigured, expoSubscriptionSchema } from './expo-push';
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const endpoint = z.string().url().max(2048).refine(value => {
   const url = new URL(value);
@@ -12,10 +14,23 @@ const endpoint = z.string().url().max(2048).refine(value => {
 }, 'Proveedor push no permitido.');
 export const subscriptionSchema = z.object({ endpoint, keys: z.object({ p256dh: z.string().regex(/^[A-Za-z0-9_-]{87}$/), auth: z.string().regex(/^[A-Za-z0-9_-]{22}$/) }).strict(), expirationTime: z.number().nullable().optional() }).strict();
 export function pushConfigured() { return Boolean(process.env.PUSH_VAPID_PUBLIC_KEY && process.env.PUSH_VAPID_PRIVATE_KEY && process.env.PUSH_VAPID_SUBJECT); }
+export const anyPushConfigured = () => pushConfigured() || expoPushConfigured();
 export function pushRouter(db: PrismaClient) {
   const router = Router();
   router.get('/config', (_req, res) => res.json({ enabled: pushConfigured(), publicKey: process.env.PUSH_VAPID_PUBLIC_KEY ?? null }));
   router.use(rateLimit({ windowMs: 60000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false }));
+  router.get('/native/config', (_req, res) => res.json({ enabled: expoPushConfigured(), projectId: expoPushConfigured() ? process.env.EXPO_PROJECT_ID : null }));
+  router.post('/native/subscriptions', readerAuth(db), async (req, res) => {
+    if (!req.get('authorization')) { res.sendStatus(401); return; }
+    if (res.locals.sessionPurpose !== 'APP') { res.sendStatus(403); return; }
+    if (!expoPushConfigured()) { res.sendStatus(503); return; }
+    const subscription = expoSubscriptionSchema.parse(req.body);
+    if (subscription.projectId !== process.env.EXPO_PROJECT_ID) { res.sendStatus(400); return; }
+    const revokeToken = randomBytes(32).toString('base64url');
+    const data = { subscription, provider: 'expo', revokeHash: hash(revokeToken), enabled: true };
+    const item = await db.pushSubscription.upsert({ where: { endpointHash: hash('expo:' + subscription.token) }, create: { ...data, endpointHash: hash('expo:' + subscription.token) }, update: data });
+    res.status(201).json({ id: item.id, revokeToken });
+  });
   router.post('/subscriptions', async (req, res) => {
     if (!pushConfigured()) { res.status(503).json({ error: { code: 'PUSH_UNAVAILABLE', message: 'Notificaciones no configuradas.', details: [] } }); return; }
     const subscription = subscriptionSchema.parse(req.body);
@@ -39,7 +54,22 @@ export const sendWebPush: PushSender = async (subscription, payload) => {
     timeout: 5000, TTL: 86400,
   });
 };
-export async function processPushQueue(db: PrismaClient, send: PushSender = sendWebPush) {
+export async function processPushQueue(db: PrismaClient, send: PushSender = sendWebPush, expo = createExpoTransport()) {
+  const receipts = await db.pushDelivery.findMany({ where: { status: 'AWAITING_RECEIPT', receiptCheckAt: { lte: new Date() } }, take: 5, include: { subscription: true } });
+  for (const delivery of receipts) {
+    try {
+      if (!delivery.expoTicketId) throw new Error('Missing ticket');
+      const accepted = await expo.receipt(delivery.expoTicketId);
+      if (!accepted) throw new Error('Receipt pending');
+      await db.pushDelivery.updateMany({ where: { id: delivery.id, status: 'AWAITING_RECEIPT' }, data: { status: 'SENT', receiptCheckAt: null } });
+    } catch (error) {
+      const expired = typeof error === 'object' && error !== null && 'statusCode' in error && error.statusCode === 410;
+      const timedOut = !delivery.claimedAt || delivery.claimedAt.getTime() < Date.now() - 86400000;
+      const rejected = typeof error === 'object' && error !== null && 'expoRejected' in error;
+      if (expired) await db.pushSubscription.update({ where: { id: delivery.subscriptionId }, data: { enabled: false } });
+      await db.pushDelivery.updateMany({ where: { id: delivery.id, status: 'AWAITING_RECEIPT' }, data: expired || timedOut || rejected ? { status: 'FAILED', errorCode: expired ? 'EXPIRED' : rejected ? 'SEND_FAILED' : 'RECEIPT_TIMEOUT', receiptCheckAt: null } : { receiptCheckAt: new Date(Date.now() + 60000) } });
+    }
+  }
   // An interrupted send has uncertain delivery: fail it rather than duplicate it.
   const stale = await db.pushDelivery.findMany({ where: { status: 'PROCESSING', claimedAt: { lt: new Date(Date.now() - 120000) } }, take: 100 });
   await db.pushDelivery.updateMany({ where: { id: { in: stale.map(item => item.id) }, status: 'PROCESSING' }, data: { status: 'FAILED', errorCode: 'INTERRUPTED' } });
@@ -47,20 +77,23 @@ export async function processPushQueue(db: PrismaClient, send: PushSender = send
   await Promise.all(queued.map(async delivery => {
     const claimed = await db.pushDelivery.updateMany({ where: { id: delivery.id, status: 'QUEUED' }, data: { status: 'PROCESSING', claimedAt: new Date() } });
     if (!claimed.count) return;
-    let status = 'SENT', errorCode: string | null = null;
+    let status = 'SENT', errorCode: string | null = null, expoTicketId: string | null = null;
     try {
       const current = await db.pushSubscription.findUniqueOrThrow({ where: { id: delivery.subscriptionId } });
       if (!current.enabled) throw new Error('UNSUBSCRIBED');
       const news = delivery.notification.news;
       const url = news?.status === 'PUBLISHED' && news.publishedAt && news.publishedAt <= new Date() ? `/news/${news.slug}` : '/';
-      await send(subscriptionSchema.parse(current.subscription), { title: delivery.notification.title, body: delivery.notification.body, url, tag: delivery.notificationId });
+      const payload = { title: delivery.notification.title, body: delivery.notification.body, url, tag: delivery.notificationId };
+      const native = expoSubscriptionSchema.safeParse(current.subscription);
+      if (native.success) { expoTicketId = await expo.send(native.data, payload); status = 'AWAITING_RECEIPT'; }
+      else await send(subscriptionSchema.parse(current.subscription), payload);
     } catch (error) {
       status = 'FAILED';
       const code = typeof error === 'object' && error !== null && 'statusCode' in error ? error.statusCode : undefined;
       errorCode = code === 404 || code === 410 ? 'EXPIRED' : 'SEND_FAILED';
       if (errorCode === 'EXPIRED') await db.pushSubscription.update({ where: { id: delivery.subscriptionId }, data: { enabled: false } });
     }
-    await db.pushDelivery.update({ where: { id: delivery.id }, data: { status, errorCode } });
+    await db.pushDelivery.update({ where: { id: delivery.id }, data: { status, errorCode, expoTicketId, receiptCheckAt: expoTicketId ? new Date(Date.now() + 15 * 60000) : null } });
   }));
   const active = await db.notification.findMany({ where: { status: { in: ['QUEUED', 'PROCESSING'] } }, select: { id: true }, take: 100 });
   const ids = [...new Set([...stale, ...queued].map(item => item.notificationId).concat(active.map(item => item.id)))];
@@ -69,7 +102,7 @@ export async function processPushQueue(db: PrismaClient, send: PushSender = send
       const groups = await tx.pushDelivery.groupBy({ by: ['status'], where: { notificationId: id }, _count: true });
       const count = (status: string) => groups.find(group => group.status === status)?._count ?? 0;
       const sentCount = count('SENT'), failedCount = count('FAILED');
-      const pending = count('QUEUED') + count('PROCESSING');
+      const pending = count('QUEUED') + count('PROCESSING') + count('AWAITING_RECEIPT');
       const status = pending ? 'PROCESSING' : sentCount ? failedCount ? 'PARTIAL' : 'SENT' : 'FAILED';
       const updated = await tx.notification.updateMany({ where: { id, status: { in: ['QUEUED', 'PROCESSING'] } }, data: { status, sentCount, failedCount, ...(pending ? {} : { sentAt: sentCount ? new Date() : null }) } });
       if (updated.count && !pending) await tx.auditLog.create({ data: { actor: 'push-worker', action: sentCount ? 'NOTIFICATION_SENT' : 'NOTIFICATION_FAILED', entityId: id } });
@@ -80,7 +113,7 @@ export function startPushWorker(db: PrismaClient) {
   let stopped = false;
   let pending: Promise<void> | undefined;
   const tick = () => {
-    if (stopped || pending || !pushConfigured()) return;
+    if (stopped || pending || !anyPushConfigured()) return;
     pending = processPushQueue(db).catch(() => { process.stderr.write(JSON.stringify({ event: 'push_worker_error' }) + '\n'); }).finally(() => { pending = undefined; });
   };
   const timer = setInterval(tick, 1000);

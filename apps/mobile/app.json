@@ -1,11 +1,20 @@
 {
   "expo": {
     "name": "19 de Agosto",
-    "slug": "utn-frba",
+    "slug": "agosto19app",
+    "owner": "agostos19",
+    "extra": {
+      "eas": { "projectId": "8c03564e-bf35-4073-ae65-e689396f5cde" }
+    },
+    "android": {
+      "package": "ar.com.diecinuevedeagosto.app",
+      "googleServicesFile": "./google-services.json"
+    },
     "scheme": "utnfrba",
     "version": "0.1.0",
     "plugins": [
       "expo-router",
+      "expo-notifications",
       "expo-secure-store"
     ],
     "web": {

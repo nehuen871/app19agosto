@@ -9,6 +9,7 @@ import { brand, colors, typography, spacing } from '@utn/design-tokens';
 import { BrandMark, styles } from '../components/ui';
 import { AccountMenu } from '../components/account-menu';
 import { AuthProvider, useAuth } from '../services/auth';
+import { NativePushNavigation } from '../components/native-push-navigation';
 const client = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 2 } } });
 
 export default function Layout() {
@@ -30,6 +31,7 @@ export default function Layout() {
   return <QueryClientProvider client={client}><AuthProvider>
     <StatusBar style="light" />
     <AppStack />
+    <NativePushNavigation />
   </AuthProvider></QueryClientProvider>;
 }
 

@@ -1,0 +1,25 @@
+node_modules/
+.git/
+.env
+.env.*
+!.env.example
+.next/
+.expo/
+dist/
+coverage/
+apps/api/src/generated/
+*.tsbuildinfo
+.pnpm-store/
+apps/admin/public/brand/
+google-services.json
+GoogleService-Info.plist
+*.p8
+*-firebase-adminsdk-*.json
+.credentials/
+*.jks
+*.keystore
+*.p12
+credentials.json
+# Public Firebase Android configuration is needed by the EAS Android build.
+!apps/mobile/google-services.json
+Brandbook - 19 de Agosto.pdf
