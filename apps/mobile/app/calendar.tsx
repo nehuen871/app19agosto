@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { layout, spacing } from '@utn/design-tokens';
 import { calendarDate, calendarMonthShift, calendarTimeZone, eventOnDay } from '@utn/api-client';
 import EventCalendarDOM from '../components/event-calendar-dom';
 import { api } from '../services/api';
 import { agendaWeek, shiftAgendaDay } from '../services/agenda';
 import { BottomNavigation } from '../components/bottom-navigation';
 import { EventCard } from '../components/EventCard';
-import { Body, Button, EmptyState, Heading, LoadingIndicator, QueryNotice, Text, useScreenContentStyle, styles } from '../components/ui';
+import { CalendarArrow } from '../components/calendar-arrow';
+import { Body, Button, EmptyState, Heading, LoadingIndicator, QueryNotice, Text, useScreenContentStyle } from '../components/ui';
 import { newsStyles } from '../components/news-styles';
 import { editorialStyles as es } from '../components/editorial-styles';
 
@@ -19,12 +21,16 @@ const results: Record<string, string> = {
 };
 export default function CalendarScreen() {
   const contentStyle = useScreenContentStyle();
+  const weekStrip = useRef<ScrollView>(null);
+  const [weekWidth, setWeekWidth] = useState(0);
   const { googleResult, month: requestedMonth } = useLocalSearchParams<{ googleResult?: string; month?: string }>();
   const today = calendarDate(new Date());
   const initialMonth = requestedMonth && /^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : today.slice(0, 7);
   const [month, setMonth] = useState(initialMonth), [anchor, setAnchor] = useState(initialMonth === today.slice(0, 7) ? today : `${initialMonth}-01`);
   const [selected, setSelected] = useState<string | null>(null), [monthView, setMonthView] = useState(false);
   const days = agendaWeek(anchor);
+  const visibleDays = Math.min(days.length, Math.max(1, Math.floor((weekWidth + spacing.xs) / (layout.touchTarget + spacing.xs))));
+  const dayWidth = weekWidth > 0 ? Math.max(layout.touchTarget, (weekWidth - spacing.xs * (visibleDays - 1)) / visibleDays) : layout.touchTarget;
   const adjacentMonth = days.find(day => day.slice(0, 7) !== month && day >= '2000-01-01' && day <= '2100-12-31')?.slice(0, 7);
   const query = useInfiniteQuery({ queryKey: ['events', month], initialPageParam: 1, queryFn: ({ pageParam, signal }) => api.events(month, pageParam, signal), getNextPageParam: page => page.page * page.limit < page.total ? page.page + 1 : undefined });
   const adjacent = useInfiniteQuery({ queryKey: ['events', adjacentMonth ?? month], initialPageParam: 1, queryFn: ({ pageParam, signal }) => api.events(adjacentMonth ?? month, pageParam, signal), getNextPageParam: page => page.page * page.limit < page.total ? page.page + 1 : undefined, enabled: !monthView && Boolean(adjacentMonth) });
@@ -35,19 +41,35 @@ export default function CalendarScreen() {
   const hero = shown.find(event => new Date(event.startsAt).getTime() >= Date.now());
   const rows = shown.filter(event => event.id !== hero?.id);
   function changeMonth(offset: number) { const next = calendarMonthShift(month, offset); setMonth(next); setAnchor(`${next}-01`); setSelected(null); }
-  function changeWeek(offset: number) { const next = shiftAgendaDay(anchor, offset * 7); setAnchor(next); setMonth(next.slice(0, 7)); setSelected(null); }
+  function changeWeek(offset: number) { const next = shiftAgendaDay(anchor, offset * 7); setAnchor(next); setMonth(next.slice(0, 7)); setSelected(null); weekStrip.current?.scrollTo({ x: 0, animated: false }); }
   function selectDay(day: string) { setSelected(day); setAnchor(day); setMonth(day.slice(0, 7)); }
   const googleStartUrl = google.data?.enabled ? google.data.startUrl : null;
   const hasMore = query.hasNextPage || (crossing && adjacent.hasNextPage);
   function refresh() { void query.refetch(); if (crossing) void adjacent.refetch(); }
   return <View style={newsStyles.page}><ScrollView style={newsStyles.page} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle}>
-    <View style={newsStyles.introduction}><Text style={newsStyles.eyebrow}>Tu semana en la facultad</Text><Heading style={newsStyles.screenTitle}>Hacé lugar a lo que viene.</Heading></View>
+    <View style={newsStyles.introduction}>
+      <View style={es.calendarNavigation}>
+        <Text style={[newsStyles.eyebrow, es.calendarEyebrow]}>Tu semana en la facultad</Text>
+        <Button title={monthView ? 'Ver semana' : 'Ver mes'} size="sm" variant="outline" style={es.viewToggle} onPress={() => { setMonthView(!monthView); setSelected(null); }}
+          leading={<View accessible={false} importantForAccessibility="no-hide-descendants" style={es.viewIcon}>{monthView ? [0, 1, 2].map(line => <View key={line} style={es.viewIconLine} />) : <View style={es.viewIconCalendar}><View style={es.viewIconCalendarHeader} /></View>}</View>} />
+      </View>
+      <Heading style={newsStyles.screenTitle}>Hacé lugar a lo que viene.</Heading>
+    </View>
     {googleResult && results[googleResult] && <Body>{results[googleResult]}</Body>}
-    <View style={es.row}><Heading level={3}>{new Date(`${month}-01T12:00:00-03:00`).toLocaleDateString('es-AR', { timeZone: calendarTimeZone, month: 'long', year: 'numeric' })}</Heading><Button title={monthView ? 'Ver semana' : 'Ver mes'} size="sm" variant="outline" onPress={() => { setMonthView(!monthView); setSelected(null); }} /></View>
-    <View style={styles.paginationButtons}><Button style={styles.paginationButton} title={monthView ? 'Mes anterior' : 'Semana anterior'} size="sm" variant="ghost" disabled={monthView ? month === '2000-01' : shiftAgendaDay(anchor, -7) < '2000-01-01'} onPress={() => monthView ? changeMonth(-1) : changeWeek(-1)} /><Button style={styles.paginationButton} title={monthView ? 'Mes siguiente' : 'Semana siguiente'} size="sm" variant="ghost" disabled={monthView ? month === '2100-12' : shiftAgendaDay(anchor, 7) > '2100-12-31'} onPress={() => monthView ? changeMonth(1) : changeWeek(1)} /></View>
-    {!monthView && <ScrollView horizontal contentContainerStyle={es.week} showsHorizontalScrollIndicator={false} accessibilityLabel="Días de la semana">
-      {days.map(day => <Button key={day} title={`${new Date(`${day}T12:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC', weekday: 'short' })}\n${Number(day.slice(8))}`} accessibilityLabel={`${new Date(`${day}T12:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })}${events.some(event => eventOnDay(event, day)) ? ', con eventos cargados' : ''}`} accessibilityState={{ selected: selected === day }} style={es.day} size="sm" variant={selected === day ? 'primary' : 'ghost'} disabled={day < '2000-01-01' || day > '2100-12-31'} onPress={() => selectDay(day)} />)}
-    </ScrollView>}
+    <View style={es.section}>
+      <View style={es.calendarNavigation}>
+        {monthView && <CalendarArrow direction="previous" label="Mes anterior" disabled={month === '2000-01'} onPress={() => changeMonth(-1)} />}
+        <Heading level={3} style={monthView ? es.monthTitle : undefined}>{new Date(`${month}-01T12:00:00-03:00`).toLocaleDateString('es-AR', { timeZone: calendarTimeZone, month: 'long', year: 'numeric' })}</Heading>
+        {monthView && <CalendarArrow direction="next" label="Mes siguiente" disabled={month === '2100-12'} onPress={() => changeMonth(1)} />}
+      </View>
+    {!monthView && <View style={es.calendarNavigation}>
+      <CalendarArrow direction="previous" label="Semana anterior" disabled={shiftAgendaDay(anchor, -7) < '2000-01-01'} onPress={() => changeWeek(-1)} />
+      <ScrollView ref={weekStrip} horizontal style={es.weekViewport} onLayout={event => setWeekWidth(event.nativeEvent.layout.width)} contentContainerStyle={es.week} showsHorizontalScrollIndicator={false} accessibilityLabel="Días de la semana">
+      {days.map(day => <Button key={day} title={`${new Date(`${day}T12:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC', weekday: 'short' })}\n${Number(day.slice(8))}`} accessibilityLabel={`${new Date(`${day}T12:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })}${events.some(event => eventOnDay(event, day)) ? ', con eventos cargados' : ''}`} accessibilityState={{ selected: selected === day }} style={[es.day, { width: dayWidth }]} size="sm" variant={selected === day ? 'primary' : 'ghost'} disabled={day < '2000-01-01' || day > '2100-12-31'} onPress={() => selectDay(day)} />)}
+      </ScrollView>
+      <CalendarArrow direction="next" label="Semana siguiente" disabled={shiftAgendaDay(anchor, 7) > '2100-12-31'} onPress={() => changeWeek(1)} />
+    </View>}
+    </View>
     {!query.data ? query.fetchStatus === 'paused' ? <QueryNotice paused failed={false} onRetry={() => void query.refetch()} /> : query.isError ? <View style={es.section}><Body>No pudimos cargar los eventos. Revisá tu conexión.</Body><Button title="Reintentar" onPress={() => void query.refetch()} /></View> : <LoadingIndicator title="Cargando eventos…" /> : <>
       <QueryNotice paused={query.fetchStatus === 'paused'} failed={query.isRefetchError} onRetry={() => void query.refetch()} />
       {crossing && !adjacent.data && adjacent.isLoading && <LoadingIndicator title="Completando la semana…" />}
