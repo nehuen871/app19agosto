@@ -1,4 +1,5 @@
 import { session as appSession } from './session';
+import { disableNativePush } from './native-push';
 import { apiUrl } from './environment';
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { router } from 'expo-router';
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
   async function logout() {
     setBusy(true); setError('');
-    try { const credentials = await appSession.credentials(); await api.logout(undefined, credentials?.refreshToken); await appSession.clear(); sessionGeneration.current++; setUser(null); clearAppCache(); return true; }
+    try { await disableNativePush(); const credentials = await appSession.credentials(); await api.logout(undefined, credentials?.refreshToken); await appSession.clear(); sessionGeneration.current++; setUser(null); clearAppCache(); return true; }
     catch { setError('No pudimos cerrar la sesión. Revisá tu conexión y reintentá.'); return false; }
     finally { setBusy(false); }
   }

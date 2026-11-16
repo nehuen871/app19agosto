@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import { decodeRich, encodeRich, richPlain, richPrefix, richLimit, richStorageLimit, richContentLimit, richContentStorageLimit } from '@utn/types';
+function newsRichField(label: string, limit: number, storageLimit: number) { return z.string().max(storageLimit).superRefine((value, context) => {
+  const doc = decodeRich(value);
+  if (!doc) { context.addIssue({ code: 'custom', message: `El formato de ${label} no es válido.` }); return; }
+  const text = richPlain(doc);
+  if (!text.trim() || text.length > limit) context.addIssue({ code: 'custom', message: `${label} debe tener entre 1 y ${limit} caracteres de texto.` });
+}).transform(value => value.startsWith(richPrefix) ? encodeRich(decodeRich(value)!) : value.trim()); }
+export const newsSummary = newsRichField('Resumen', richLimit, richStorageLimit);
+export const newsContent = newsRichField('Contenido', richContentLimit, richContentStorageLimit);
 export const newsQuery = z.object({ page: z.coerce.number().int().min(1).max(10000).default(1), limit: z.coerce.number().int().min(1).max(100).default(20), category: z.string().trim().min(1).max(100).optional(), featured: z.enum(['true','false']).optional().transform(v => v === undefined ? undefined : v === 'true') });
 export const slugParam = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(160);
 
@@ -15,8 +24,8 @@ export const notificationQuery = z.object({
 export const newsInput = z.object({
   title: z.string().trim().min(1).max(160),
   slug: slugParam,
-  summary: z.string().trim().min(1).max(500),
-  content: z.string().trim().min(1).max(20000),
+  summary: newsSummary,
+  content: newsContent,
   category: z.string().trim().min(1).max(100).refine(value => /[a-z0-9]/i.test(value.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))),
   coverImageUrl: z.string().url().refine(value => ['http:', 'https:'].includes(new URL(value).protocol)).nullable().optional(),
   coverImageId: z.uuid().nullable().optional(),

@@ -7,6 +7,8 @@ import request from 'supertest';
 import { db } from './db';
 import { createApp } from './app';
 import { processPushQueue } from './push';
+import { hashToken } from './auth';
+import { expoPushError } from './expo-push';
 const token = testAdminToken();
 const app = createApp(db);
 const notificationIds: string[] = [], subscriptionIds: string[] = [];
@@ -73,4 +75,47 @@ test('recovers final counters after interrupted finalization without sending twi
   await db.notification.update({ where: { id }, data: { status: 'PROCESSING', requestedRecipients: 1 } });
   await processPushQueue(db, async () => { assert.fail('Must not resend completed delivery'); });
   assert.equal((await db.notification.findUniqueOrThrow({ where: { id } })).status, 'SENT');
+});
+
+test('native registration requires an app session and matching project; Expo receipts finalize the shared queue', async () => {
+  const projectId = '10000000-0000-4000-8000-000000000001';
+  process.env.EXPO_PUSH_ENABLED = 'true'; process.env.EXPO_PROJECT_ID = projectId;
+  process.env.ALLOWED_EMAIL_DOMAINS = 'example.test';
+  const appToken = testAdminToken();
+  const account = await db.account.create({ data: { googleSubject: randomUUID(), email: 'reader@example.test', name: 'Reader' } });
+  const webKey = process.env.PUSH_VAPID_PUBLIC_KEY;
+  try {
+    await db.authSession.create({ data: { tokenHash: hashToken(appToken), accountId: account.id, purpose: 'APP', expiresAt: new Date(Date.now() + 60000) } });
+    const body = { provider: 'expo', token: `ExpoPushToken[${randomUUID()}]`, projectId };
+    await request(app).post('/api/v1/push/native/subscriptions').send(body).expect(401);
+    await request(app).post('/api/v1/push/native/subscriptions').set('Authorization', `Bearer ${token}`).send(body).expect(403);
+    const register = (input: object) => request(app).post('/api/v1/push/native/subscriptions').set('Authorization', `Bearer ${appToken}`).send(input);
+    await register({ ...body, projectId: randomUUID() }).expect(400);
+    await register({ ...body, enabled: true }).expect(400);
+    const registered = await register(body).expect(201); subscriptionIds.push(registered.body.id);
+    const again = await register(body).expect(201); assert.equal(registered.body.id, again.body.id);
+    await request(app).post('/api/v1/push/unsubscribe').send(registered.body).expect(204);
+    assert.equal((await db.pushSubscription.findUniqueOrThrow({ where: { id: again.body.id } })).enabled, true);
+    const id = await draft();
+    process.env.PUSH_VAPID_PUBLIC_KEY = '';
+    await request(app).post(`/api/v1/admin/notifications/${id}/send`).set('Authorization', `Bearer ${token}`).send({}).expect(202);
+    assert.equal((await db.notification.findUniqueOrThrow({ where: { id } })).requestedRecipients, 1);
+    let sends = 0;
+    const transport = { send: async () => { sends++; return 'expo-test-ticket'; }, receipt: async () => true };
+    await processPushQueue(db, async () => {}, transport);
+    const delivery = await db.pushDelivery.findUniqueOrThrow({ where: { notificationId_subscriptionId: { notificationId: id, subscriptionId: again.body.id } } });
+    assert.equal(delivery.status, 'AWAITING_RECEIPT');
+    assert.equal((await db.notification.findUniqueOrThrow({ where: { id } })).status, 'PROCESSING');
+    await db.pushDelivery.update({ where: { id: delivery.id }, data: { receiptCheckAt: new Date(0) } });
+    await processPushQueue(db, async () => {}, transport);
+    assert.equal((await db.notification.findUniqueOrThrow({ where: { id } })).status, 'SENT');
+    assert.equal(sends, 1);
+    const failedId = await draft();
+    await request(app).post(`/api/v1/admin/notifications/${failedId}/send`).set('Authorization', `Bearer ${token}`).send({}).expect(202);
+    await processPushQueue(db, async () => {}, transport);
+    await db.pushDelivery.updateMany({ where: { notificationId: failedId, status: 'AWAITING_RECEIPT' }, data: { receiptCheckAt: new Date(0) } });
+    await processPushQueue(db, async () => {}, { ...transport, receipt: async () => { throw expoPushError('DeviceNotRegistered'); } });
+    assert.equal((await db.pushSubscription.findUniqueOrThrow({ where: { id: again.body.id } })).enabled, false);
+    assert.equal((await db.pushDelivery.findUniqueOrThrow({ where: { notificationId_subscriptionId: { notificationId: failedId, subscriptionId: again.body.id } } })).errorCode, 'EXPIRED');
+  } finally { process.env.PUSH_VAPID_PUBLIC_KEY = webKey; await db.account.delete({ where: { id: account.id } }); }
 });

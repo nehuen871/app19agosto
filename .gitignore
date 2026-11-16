@@ -13,3 +13,14 @@ apps/api/src/generated/
 
 # Generated from canonical assets by admin prebuild/predev.
 apps/admin/public/brand/
+
+# Native credentials are supplied locally or through EAS secrets.
+google-services.json
+GoogleService-Info.plist
+*.p8
+*-firebase-adminsdk-*.json
+.credentials/
+*.jks
+*.keystore
+*.p12
+credentials.json

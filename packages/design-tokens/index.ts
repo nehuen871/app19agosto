@@ -53,6 +53,14 @@ export const typography = {
 // Layout caps preserve reading length on desktop/tablets; touch targets meet 48px.
 export const layout = { contentMax: 1152, readingMax: 768, touchTarget: 48, coverAspect: 16 / 9 };
 export const interaction = { pressedOpacity: 0.85, disabledOpacity: 0.55 };
+// Editorial news uses the existing spacing scale and touch target size.
+export const newsLayout = {
+  thumbnailSize: layout.touchTarget + spacing.lg,
+  heroMinHeight: spacing['2xl'] * 5,
+  heroArtSize: spacing['2xl'] * 4,
+  heroArtAngle: '30deg' as const,
+  heroArtOpacity: 0.16,
+};
 export const calendarColors = {
   BLUE: { background: brand.colors.blue, foreground: white, label: 'Azul' },
   YELLOW: { background: brand.colors.yellow, foreground: brand.colors.black, label: 'Amarillo' },

@@ -2,7 +2,7 @@
 
 La app web de `http://localhost:8081` permite activar y desactivar push en cada navegador. El administrador guarda un borrador en `/admin/notifications`, marca la confirmación y pulsa **Enviar push**. Publicar una noticia no envía push. Sin suscripciones activas, el envío muestra un error y conserva el borrador.
 
-Esta implementación usa Web Push y VAPID. El envío nativo Android/iOS por Expo sigue pendiente: requiere una compilación nativa, proyecto EAS y credenciales FCM/APNs. No se solicitan permisos automáticamente al abrir la app. Fuera de localhost, la app web debe servirse por HTTPS; la compatibilidad depende del navegador y del sistema operativo.
+La web usa Web Push y VAPID. La app nativa integra Expo Push Service, con activación separada por proyecto EAS y credenciales FCM/APNs. No se solicitan permisos automáticamente al abrir la app. Fuera de localhost, la app web debe servirse por HTTPS; la compatibilidad depende del navegador y del sistema operativo.
 
 ## Configuración
 

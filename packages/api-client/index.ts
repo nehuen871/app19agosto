@@ -1,4 +1,5 @@
 export * from './session';
+export { decodeRich, encodeRich, richText, richPlain, plainDocument, validateRichDocument, safeRichLink, richLimit, richContentLimit, richPrefix, richStorageLimit, richContentStorageLimit, type RichNode, type RichMark } from '@utn/types';
 import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage } from '@utn/types';
 export * from './calendar';
 export * from './auth';
@@ -34,9 +35,16 @@ export function createApiClient(baseUrl: string, options: { fetcher?: typeof fet
   }
 
   return {
-    news: async (page = 1, signal?: AbortSignal) => { const data = await get<Page<News>>(`/news?page=${page}`, signal); return { ...data, items: data.items.map(cover) }; },
+    news: async (page = 1, signal?: AbortSignal, filters: { category?: string; featured?: boolean; limit?: number } = {}) => {
+      const query = new URLSearchParams({ page: String(page) });
+      if (filters.category) query.set('category', filters.category);
+      if (filters.featured !== undefined) query.set('featured', String(filters.featured));
+      if (filters.limit !== undefined) query.set('limit', String(filters.limit));
+      const data = await get<Page<News>>(`/news?${query}`, signal);
+      return { ...data, items: data.items.map(cover) };
+    },
     detail: async (slug: string, signal?: AbortSignal) => cover(await get<News>(`/news/${encodeURIComponent(slug)}`, signal)),
-    categories: () => get<Category[]>('/categories'),
+    categories: (signal?: AbortSignal) => get<Category[]>('/categories', signal),
     events: (month: string, page = 1, signal?: AbortSignal) => get<Page<CalendarEvent>>(`/events?month=${encodeURIComponent(month)}&page=${page}`, signal),
     authorizeCalendar: (eventId: string) => get<{ startUrl: string }>('/google-calendar/authorize', undefined, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId }) }),
     googleCalendarConfig: (signal?: AbortSignal) => get<{ enabled: boolean; startUrl: string | null }>('/google-calendar/config', signal),

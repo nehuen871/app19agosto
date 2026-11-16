@@ -2,6 +2,8 @@
 
 La app tiene una pantalla **Mi cuenta**. El admin ofrece **Continuar con Google** como único método de ingreso. La app solicita ingresar con Google antes de mostrar cualquier sección: noticias, detalle, calendario y cuenta. Sin sesión, la única pantalla accesible es el ingreso. La API exige además una sesión válida para leer noticias, categorías, eventos e imágenes subidas. Una sesión APP no permite administrar contenido.
 
+Si la consulta de acceso del panel falla o supera los 10 segundos, el ingreso muestra **Reintentar acceso** para volver a consultar sin recargar la página. Si Google no está configurado, se muestra ese motivo y también se permite consultar nuevamente después de configurarlo; vencer una sesión no habilita ni deshabilita OAuth.
+
 ## Configuración
 
 1. En Google Cloud, configurar la pantalla de consentimiento y crear un cliente OAuth de tipo **Aplicación web**. En modo de prueba, agregar las cuentas que van a probarlo. Usar un cliente distinto para producción y desarrollo.

@@ -50,8 +50,8 @@ export function EmptyState({ title, description }: { title: string; description:
 export function NewsSkeleton() {
   return <View accessibilityRole="progressbar" accessibilityLabel="Cargando noticias…" style={styles.section}><Body small>Cargando noticias…</Body>{[0, 1].map(item => <View key={item} style={styles.card} accessible={false} importantForAccessibility="no-hide-descendants"><View style={styles.skeletonCover} /><View style={styles.skeletonLabel} /><View style={styles.skeletonTitle} /><View style={styles.skeletonLine} /><View style={styles.skeletonLine} /></View>)}</View>;
 }
-export function Heading({ children, level = 1 }: PropsWithChildren<{ level?: 1 | 2 | 3 }>) {
-  return <Text accessibilityRole="header" style={[styles.heading, typography[`heading${level}`]]}>{children}</Text>;
+export function Heading({ children, level = 1, style }: PropsWithChildren<{ level?: 1 | 2 | 3; style?: StyleProp<TextStyle> }>) {
+  return <Text accessibilityRole="header" style={[styles.heading, typography[`heading${level}`], style]}>{children}</Text>;
 }
 export function Body({ children, small = false, muted = false }: PropsWithChildren<{ small?: boolean; muted?: boolean }>) {
   return <Text selectable style={[styles.body, small && typography.bodySmall, muted && styles.mutedText]}>{children}</Text>;
@@ -62,10 +62,10 @@ export function Badge({ children, featured = false, variant = 'secondary' }: Pro
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   title: string; variant?: ButtonVariant; size?: keyof typeof componentTokens.sizes;
-  loading?: boolean; leading?: ReactNode; style?: StyleProp<ViewStyle>;
+  loading?: boolean; leading?: ReactNode; iconOnly?: boolean; style?: StyleProp<ViewStyle>;
 };
 export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(function Button({
-  title, disabled = false, variant = 'primary', size = 'md', loading = false, leading, style,
+  title, disabled = false, variant = 'primary', size = 'md', loading = false, leading, iconOnly = false, style,
   onFocus, onBlur, onHoverIn, onHoverOut, accessibilityState, ...props
 }, ref) {
   const [focused, setFocused] = useState(false), [hovered, setHovered] = useState(false);
@@ -79,26 +79,19 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
       variant === 'ghost' && styles.buttonGhost, variant === 'danger' && styles.buttonDanger,
       hovered && !blocked && styles.pressed, pressed && styles.pressed, focused && styles.focused, blocked && styles.disabled, style]}>
     {loading ? <ActivityIndicator color={lightText ? theme.primaryForeground : theme.primary} accessibilityElementsHidden /> : leading}
-    <TextStyleContext value={[styles.buttonText, !lightText && styles.buttonSecondaryText]}><Text>{title}</Text></TextStyleContext>
+    {!iconOnly && <TextStyleContext value={[styles.buttonText, !lightText && styles.buttonSecondaryText]}><Text>{title}</Text></TextStyleContext>}
   </Pressable>;
 });
 export function LoadingIndicator({ title = 'Cargando noticias…' }: { title?: string }) {
   return <View accessibilityRole="progressbar" accessibilityLabel={title} style={styles.state}><ActivityIndicator color={theme.primary} /><Body>{title}</Body></View>;
 }
 export const styles = StyleSheet.create({
-  accountTrigger: { minWidth: layout.touchTarget, minHeight: layout.touchTarget, alignItems: 'center', justifyContent: 'center' },
-  accountIcon: { width: spacing.lg, alignItems: 'center', gap: spacing.xs },
-  accountIconHead: { width: spacing.sm, height: spacing.sm, borderWidth: componentTokens.focusWidth, borderColor: theme.headerForeground, borderRadius: radius.full },
-  accountIconBody: { width: spacing.lg, height: spacing.md, borderWidth: componentTokens.focusWidth, borderColor: theme.headerForeground, borderRadius: radius.lg },
-  accountOverlay: { flex: 1 },
-  accountBackdrop: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: `${theme.foreground}66` },
-  accountSidebar: { width: componentTokens.accountSidebarWidth, maxWidth: layout.readingMax / 2, height: '100%', backgroundColor: theme.surface },
-  accountSidebarContent: { padding: spacing.lg, gap: spacing.lg },
   profileInput: { ...typography.body, color: theme.foreground, backgroundColor: theme.surface, borderWidth: componentTokens.borderWidth, borderColor: theme.border, borderRadius: radius.md, minHeight: layout.touchTarget, padding: spacing.md },
   page: { flex: 1, backgroundColor: theme.editorial },
   section: { gap: spacing.lg },
   navigation: { flexDirection: 'row', gap: spacing.xs, backgroundColor: theme.surface, padding: spacing.xs, borderRadius: radius.full, borderWidth: componentTokens.borderWidth, borderColor: theme.border },
   preferencePanel: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md, borderRadius: radius.lg, borderWidth: componentTokens.borderWidth, borderColor: theme.border, padding: spacing.md },
+  preferenceEmbedded: { borderWidth: 0, padding: 0 },
   preferenceText: { flexGrow: 1, flexShrink: 1, gap: spacing.xs },
   pagination: { gap: spacing.md, borderTopWidth: componentTokens.borderWidth, borderColor: theme.border, paddingTop: spacing.lg },
   paginationButtons: { flexDirection: 'row', gap: spacing.sm },

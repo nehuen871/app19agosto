@@ -1,4 +1,5 @@
-import { pushConfigured } from './push';
+import { anyPushConfigured, pushConfigured } from './push';
+import { expoPushConfigured } from './expo-push';
 import { adminAuth } from './admin-auth';
 import { Router } from 'express';
 import { notificationDraft, notificationQuery } from '@utn/validation';
@@ -16,13 +17,13 @@ export function notificationsRouter(db: PrismaClient) {
     res.json({ items, total, page, limit });
   });
   router.post('/:id/send', async (req, res) => {
-    if (!pushConfigured()) { res.status(503).json({ error: { code: 'PUSH_UNAVAILABLE', message: 'Envío push no configurado.', details: [] } }); return; }
+    if (!anyPushConfigured()) { res.status(503).json({ error: { code: 'PUSH_UNAVAILABLE', message: 'Envío push no configurado.', details: [] } }); return; }
     const id = String(req.params.id);
     const result = await db.$transaction(async tx => {
       const item = await tx.notification.findUnique({ where: { id } });
       if (!item) return { error: 'NOT_FOUND' };
       if (item.status !== 'DRAFT') return { error: 'ALREADY_SENT' };
-      const subscriptions = await tx.pushSubscription.findMany({ where: { enabled: true }, select: { id: true }, take: 5001 });
+      const subscriptions = await tx.pushSubscription.findMany({ where: { enabled: true, provider: { in: [ ...(expoPushConfigured() ? ['expo'] : []), ...(pushConfigured() ? ['web'] : []) ] } }, select: { id: true }, take: 5001 });
       if (!subscriptions.length) return { error: 'NO_RECIPIENTS' };
       if (subscriptions.length > 5000) return { error: 'TOO_MANY_RECIPIENTS' };
       const claimed = await tx.notification.updateMany({ where: { id, status: 'DRAFT' }, data: { status: 'QUEUED', requestedRecipients: subscriptions.length } });

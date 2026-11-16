@@ -13,6 +13,6 @@ export function SendPushForm({ id }: { id: string }) {
 }
 export function RefreshPushStatus({ active }: { active: boolean }) {
   const router = useRouter();
-  useEffect(() => { if (!active) return; const timer = setInterval(() => router.refresh(), 3000); return () => clearInterval(timer); }, [active, router]);
+  useEffect(() => { if (!active) return; const timer = setInterval(() => router.refresh(), 15000); return () => clearInterval(timer); }, [active, router]);
   return null;
 }
