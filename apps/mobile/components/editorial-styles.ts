@@ -1,0 +1,27 @@
+import { StyleSheet } from 'react-native';
+import { colors, spacing, typography, radius, layout, componentTokens } from '@utn/design-tokens';
+const theme = colors.light;
+export const editorialStyles = StyleSheet.create({
+  section: { gap: spacing.md },
+  collapsed: { display: 'none' },
+  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  identityCopy: { flex: 1, gap: spacing.xs },
+  name: { ...typography.heading3 },
+  panel: { backgroundColor: theme.editorial, padding: spacing.lg, borderRadius: radius.lg, gap: spacing.md },
+  disclosure: { borderBottomWidth: componentTokens.borderWidth, borderBottomColor: theme.border, paddingVertical: spacing.md, gap: spacing.md },
+  disclosureButton: { justifyContent: 'space-between', paddingHorizontal: 0 },
+  week: { gap: spacing.xs, paddingVertical: spacing.xs },
+  day: { minWidth: layout.touchTarget, paddingHorizontal: spacing.sm, borderRadius: radius.full },
+  eventRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.lg, borderBottomWidth: componentTokens.borderWidth, borderBottomColor: theme.border },
+  date: { width: layout.touchTarget, flexShrink: 0, gap: spacing.xs, alignItems: 'center' },
+  dateNumber: { ...typography.heading2, color: theme.primary },
+  dateMonth: { ...typography.caption, textTransform: 'uppercase', color: theme.foreground },
+  eventCopy: { flex: 1, gap: spacing.sm },
+  eventTitle: { ...typography.label, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
+  hero: { backgroundColor: theme.primary, borderColor: theme.primary, gap: spacing.md },
+  heroText: { color: theme.primaryForeground },
+  heroTitle: { ...typography.heading2, color: theme.primaryForeground },
+  heroCaption: { ...typography.caption, color: theme.primaryForeground },
+  heroAction: { alignSelf: 'flex-start' },
+});

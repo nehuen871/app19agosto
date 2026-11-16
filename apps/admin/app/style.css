@@ -39,6 +39,24 @@ button:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
 .notification-form label { font-weight: var(--label-weight); margin-top: var(--space-sm); }
 .notification-form input, .notification-form textarea, .notification-form select { width: 100%; min-width: 0; min-height: var(--touch-target); padding: var(--space-md); border: 1px solid var(--foreground); border-radius: var(--radius-md); background: var(--surface); color: var(--foreground); font: inherit; }
 .notification-form textarea { resize: vertical; }
+.rich-field { min-width: 0; display: grid; gap: var(--space-sm); }
+.rich-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-sm); padding: var(--space-sm); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--editorial); }
+.rich-group { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-xs); }
+.rich-toolbar .rich-tool { margin: 0; padding: var(--space-sm); min-width: var(--touch-target); }
+.rich-tool[aria-pressed="true"] { background: var(--primary); color: var(--primaryForeground); }
+.rich-select { display: grid; gap: var(--space-xs); margin: 0; font-size: var(--caption-size); }
+.rich-select select { padding: var(--space-sm); font-size: var(--label-size); }
+.rich-editor { min-height: calc(var(--touch-target) * 4); padding: var(--space-md); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--foreground); overflow-wrap: anywhere; }
+.rich-editor p { margin: 0 0 var(--space-sm); }
+.rich-editor [style*="Libre Franklin"] { font-family: var(--font-body), sans-serif !important; }
+.rich-editor [style*="Libre Baskerville"] { font-family: var(--font-accent), serif !important; }
+.rich-editor [style*="Archivo"] { font-family: var(--font-alternate), sans-serif !important; }
+.rich-editor [style*="Archivo Black"] { font-family: var(--font-display), sans-serif !important; }
+.rich-editor h2, .rich-editor h3 { margin-block: var(--space-sm); }
+.rich-editor ul, .rich-editor ol { padding-left: var(--space-lg); margin-block: var(--space-sm); }
+.rich-editor blockquote { margin: var(--space-sm) 0; padding-left: var(--space-md); border-left: var(--space-xs) solid var(--border); }
+.rich-editor[contenteditable="false"] { opacity: var(--disabled-opacity); }
+.rich-link-panel { display: grid; gap: var(--space-sm); padding: var(--space-md); border: 1px solid var(--border); border-radius: var(--radius-md); }
 .notification-form button { margin-top: var(--space-md); }
 .field-help { font-size: var(--bodySmall-size); line-height: var(--bodySmall-height); }
 .form-error { color: var(--error); }

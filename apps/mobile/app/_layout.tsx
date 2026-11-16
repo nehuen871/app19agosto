@@ -7,7 +7,6 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, AppState, Platform, Text, View } from 'react-native';
 import { brand, colors, typography, spacing } from '@utn/design-tokens';
 import { BrandMark, styles } from '../components/ui';
-import { AccountMenu } from '../components/account-menu';
 import { AuthProvider, useAuth } from '../services/auth';
 import { NativePushNavigation } from '../components/native-push-navigation';
 const client = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 2 } } });
@@ -40,17 +39,17 @@ function AppStack() {
   if (!auth.ready) return <View style={styles.launch}><BrandMark variant="isologo" /><ActivityIndicator color={colors.light.headerForeground} accessibilityLabel="Verificando tu sesión…" /></View>;
   return (
     <Stack screenOptions={{
-      headerLeft: auth.user ? () => <AccountMenu /> : undefined, headerBackVisible: true,
-      title: 'UTN FRBA', headerTitle: () => <BrandMark />, headerTitleAlign: 'left',
+      headerBackVisible: true,
+      title: '19 de Agosto', headerTitle: () => <BrandMark />, headerTitleAlign: 'center',
       headerStyle: { backgroundColor: colors.light.header }, headerTintColor: colors.light.headerForeground,
       headerTitleStyle: typography.label, contentStyle: { backgroundColor: colors.light.background },
     }}>
       <Stack.Protected guard={Boolean(auth.user)}>
-      <Stack.Screen name="index" options={{ title: 'Noticias', headerTitle: 'Noticias', animation: 'none' }} />
-      <Stack.Screen name="calendar" options={{ title: 'Calendario', headerTitle: 'Calendario', animation: 'none' }} />
-      <Stack.Screen name="news/[slug]" options={{ title: 'Noticia', headerTitle: 'Noticia' }} />
+      <Stack.Screen name="index" options={{ title: 'Noticias', animation: 'none' }} />
+      <Stack.Screen name="calendar" options={{ title: 'Calendario', animation: 'none' }} />
+      <Stack.Screen name="news/[slug]" options={{ title: 'Noticia' }} />
       </Stack.Protected>
-      <Stack.Screen name="account" options={{ title: auth.user ? 'Mi cuenta' : 'Ingresar', headerTitle: auth.user ? 'Mi cuenta' : 'Ingresar', animation: 'none' }} />
+      <Stack.Screen name="account" options={{ title: auth.user ? 'Mi cuenta' : 'Ingresar', animation: 'none' }} />
     </Stack>
   );
 }

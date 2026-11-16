@@ -5,9 +5,13 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { calendarDate, calendarMonthShift, calendarTimeZone, eventOnDay } from '@utn/api-client';
 import EventCalendarDOM from '../components/event-calendar-dom';
 import { api } from '../services/api';
-import { AppNavigation } from '../components/AppNavigation';
+import { agendaWeek, shiftAgendaDay } from '../services/agenda';
+import { BottomNavigation } from '../components/bottom-navigation';
 import { EventCard } from '../components/EventCard';
-import { Body, Button, EmptyState, Heading, LoadingIndicator, QueryNotice, useScreenContentStyle, styles } from '../components/ui';
+import { Body, Button, EmptyState, Heading, LoadingIndicator, QueryNotice, Text, useScreenContentStyle, styles } from '../components/ui';
+import { newsStyles } from '../components/news-styles';
+import { editorialStyles as es } from '../components/editorial-styles';
+
 const results: Record<string, string> = {
   saved: 'Google Calendar confirmó el guardado del evento.', exists: 'El evento ya está en tu Google Calendar.',
   cancelled: 'No autorizaste el guardado en Google Calendar.', failed: 'Google Calendar no pudo guardar el evento. Volvé a intentar.',
@@ -16,29 +20,52 @@ const results: Record<string, string> = {
 export default function CalendarScreen() {
   const contentStyle = useScreenContentStyle();
   const { googleResult, month: requestedMonth } = useLocalSearchParams<{ googleResult?: string; month?: string }>();
-  const today = calendarDate(new Date()), [month, setMonth] = useState(requestedMonth && /^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : today.slice(0, 7)), [selected, setSelected] = useState<string | null>(null);
+  const today = calendarDate(new Date());
+  const initialMonth = requestedMonth && /^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : today.slice(0, 7);
+  const [month, setMonth] = useState(initialMonth), [anchor, setAnchor] = useState(initialMonth === today.slice(0, 7) ? today : `${initialMonth}-01`);
+  const [selected, setSelected] = useState<string | null>(null), [monthView, setMonthView] = useState(false);
+  const days = agendaWeek(anchor);
+  const adjacentMonth = days.find(day => day.slice(0, 7) !== month && day >= '2000-01-01' && day <= '2100-12-31')?.slice(0, 7);
   const query = useInfiniteQuery({ queryKey: ['events', month], initialPageParam: 1, queryFn: ({ pageParam, signal }) => api.events(month, pageParam, signal), getNextPageParam: page => page.page * page.limit < page.total ? page.page + 1 : undefined });
+  const adjacent = useInfiniteQuery({ queryKey: ['events', adjacentMonth ?? month], initialPageParam: 1, queryFn: ({ pageParam, signal }) => api.events(adjacentMonth ?? month, pageParam, signal), getNextPageParam: page => page.page * page.limit < page.total ? page.page + 1 : undefined, enabled: !monthView && Boolean(adjacentMonth) });
   const google = useQuery({ queryKey: ['google-calendar-config'], queryFn: ({ signal }) => api.googleCalendarConfig(signal) });
-  const events = query.data?.pages.flatMap(page => page.items) ?? [];
-  const shown = selected ? events.filter(event => eventOnDay(event, selected)) : events;
-  function changeMonth(offset: number) { setMonth(calendarMonthShift(month, offset)); setSelected(null); }
-  return <ScrollView style={styles.page} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle}>
-    <AppNavigation current="calendar" /><Heading>Calendario de eventos</Heading><Body>Horarios de Argentina. Elegí un día para ver sus eventos.</Body>
+  const crossing = !monthView && Boolean(adjacentMonth);
+  const events = [...new Map([...(query.data?.pages.flatMap(page => page.items) ?? []), ...(crossing ? adjacent.data?.pages.flatMap(page => page.items) ?? [] : [])].map(event => [event.id, event])).values()].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const shown = events.filter(event => selected ? eventOnDay(event, selected) : monthView || days.some(day => eventOnDay(event, day)));
+  const hero = shown.find(event => new Date(event.startsAt).getTime() >= Date.now());
+  const rows = shown.filter(event => event.id !== hero?.id);
+  function changeMonth(offset: number) { const next = calendarMonthShift(month, offset); setMonth(next); setAnchor(`${next}-01`); setSelected(null); }
+  function changeWeek(offset: number) { const next = shiftAgendaDay(anchor, offset * 7); setAnchor(next); setMonth(next.slice(0, 7)); setSelected(null); }
+  function selectDay(day: string) { setSelected(day); setAnchor(day); setMonth(day.slice(0, 7)); }
+  const googleStartUrl = google.data?.enabled ? google.data.startUrl : null;
+  const hasMore = query.hasNextPage || (crossing && adjacent.hasNextPage);
+  function refresh() { void query.refetch(); if (crossing) void adjacent.refetch(); }
+  return <View style={newsStyles.page}><ScrollView style={newsStyles.page} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle}>
+    <View style={newsStyles.introduction}><Text style={newsStyles.eyebrow}>Tu semana en la facultad</Text><Heading style={newsStyles.screenTitle}>Hacé lugar a lo que viene.</Heading></View>
     {googleResult && results[googleResult] && <Body>{results[googleResult]}</Body>}
-    <View style={styles.paginationButtons}><Button style={styles.paginationButton} title="Mes anterior" variant="secondary" disabled={month === '2000-01'} onPress={() => changeMonth(-1)} /><Button style={styles.paginationButton} title="Mes siguiente" variant="secondary" disabled={month === '2100-12'} onPress={() => changeMonth(1)} /></View>
-    <Heading level={2}>{new Date(`${month}-01T12:00:00-03:00`).toLocaleDateString('es-AR', { timeZone: calendarTimeZone, month: 'long', year: 'numeric' })}</Heading>
-    {!query.data ? query.fetchStatus === 'paused' ? <QueryNotice paused failed={false} onRetry={() => void query.refetch()} /> : !query.isError ? <LoadingIndicator title="Cargando eventos…" /> : <><Body>No pudimos cargar los eventos. Revisá tu conexión.</Body><Button title="Reintentar" onPress={() => { void query.refetch(); }} /></> : <>
+    <View style={es.row}><Heading level={3}>{new Date(`${month}-01T12:00:00-03:00`).toLocaleDateString('es-AR', { timeZone: calendarTimeZone, month: 'long', year: 'numeric' })}</Heading><Button title={monthView ? 'Ver semana' : 'Ver mes'} size="sm" variant="outline" onPress={() => { setMonthView(!monthView); setSelected(null); }} /></View>
+    <View style={styles.paginationButtons}><Button style={styles.paginationButton} title={monthView ? 'Mes anterior' : 'Semana anterior'} size="sm" variant="ghost" disabled={monthView ? month === '2000-01' : shiftAgendaDay(anchor, -7) < '2000-01-01'} onPress={() => monthView ? changeMonth(-1) : changeWeek(-1)} /><Button style={styles.paginationButton} title={monthView ? 'Mes siguiente' : 'Semana siguiente'} size="sm" variant="ghost" disabled={monthView ? month === '2100-12' : shiftAgendaDay(anchor, 7) > '2100-12-31'} onPress={() => monthView ? changeMonth(1) : changeWeek(1)} /></View>
+    {!monthView && <ScrollView horizontal contentContainerStyle={es.week} showsHorizontalScrollIndicator={false} accessibilityLabel="Días de la semana">
+      {days.map(day => <Button key={day} title={`${new Date(`${day}T12:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC', weekday: 'short' })}\n${Number(day.slice(8))}`} accessibilityLabel={`${new Date(`${day}T12:00:00Z`).toLocaleDateString('es-AR', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })}${events.some(event => eventOnDay(event, day)) ? ', con eventos cargados' : ''}`} accessibilityState={{ selected: selected === day }} style={es.day} size="sm" variant={selected === day ? 'primary' : 'ghost'} disabled={day < '2000-01-01' || day > '2100-12-31'} onPress={() => selectDay(day)} />)}
+    </ScrollView>}
+    {!query.data ? query.fetchStatus === 'paused' ? <QueryNotice paused failed={false} onRetry={() => void query.refetch()} /> : query.isError ? <View style={es.section}><Body>No pudimos cargar los eventos. Revisá tu conexión.</Body><Button title="Reintentar" onPress={() => void query.refetch()} /></View> : <LoadingIndicator title="Cargando eventos…" /> : <>
       <QueryNotice paused={query.fetchStatus === 'paused'} failed={query.isRefetchError} onRetry={() => void query.refetch()} />
-      <EventCalendarDOM key={month} month={month} events={events} onSelectDate={async day => { setSelected(day); }} onSelectEvent={async id => { const event = events.find(item => item.id === id); if (event) setSelected(calendarDate(event.startsAt)); }} dom={{ matchContents: true, scrollEnabled: false }} />
-      {query.hasNextPage && <Body small>El calendario muestra los eventos cargados. Cargá más para completar el mes.</Body>}
-      <View style={styles.section}><Heading level={2}>{selected ? `Eventos del ${selected.slice(8, 10)}/${selected.slice(5, 7)}` : 'Eventos del mes'}</Heading>
-        {selected && <Button title="Ver todo el mes" variant="secondary" onPress={() => setSelected(null)} />}
-        {shown.length ? shown.map(event => <EventCard key={event.id} event={event} googleStartUrl={google.data?.enabled ? google.data.startUrl : null} />) : <EmptyState title={selected ? 'Un día sin eventos' : 'No hay eventos este mes'} description={selected ? 'Elegí otro día o volvé a ver el mes completo.' : 'Podés consultar otro mes o actualizar el calendario.'} />}
-        {query.hasNextPage && <Button title={query.isFetchingNextPage ? 'Cargando…' : 'Cargar más eventos del mes'} disabled={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage(); }} />}
-        {query.isFetchNextPageError && <Body>No pudimos cargar más eventos. Volvé a intentar.</Body>}
-        <Button title="Actualizar eventos" variant="secondary" disabled={query.isRefetching} onPress={() => { void query.refetch(); }} />
+      {crossing && !adjacent.data && adjacent.isLoading && <LoadingIndicator title="Completando la semana…" />}
+      {crossing && <QueryNotice paused={adjacent.fetchStatus === 'paused'} failed={adjacent.isError} onRetry={() => void adjacent.refetch()} />}
+      {monthView && <EventCalendarDOM key={month} month={month} events={events} onSelectDate={async day => selectDay(day)} onSelectEvent={async id => { const event = events.find(item => item.id === id); if (event) selectDay(calendarDate(event.startsAt)); }} dom={{ matchContents: true, scrollEnabled: false }} />}
+      {selected && <Button title={monthView ? 'Ver todo el mes' : 'Ver toda la semana'} variant="ghost" size="sm" onPress={() => setSelected(null)} />}
+      {hasMore && <Body small>Mostramos los eventos cargados. Cargá más para completar la agenda.</Body>}
+      {hero && <EventCard key={`hero-${hero.id}`} event={hero} googleStartUrl={googleStartUrl} variant="hero" />}
+      <View style={es.section}><Heading level={3}>{selected ? `Eventos del ${selected.slice(8, 10)}/${selected.slice(5, 7)}` : monthView ? 'En la agenda del mes' : 'Esta semana'}</Heading>
+        {rows.map(event => <EventCard key={event.id} event={event} googleStartUrl={googleStartUrl} variant="compact" />)}
+        {!shown.length && !(crossing && !adjacent.data) && <EmptyState title={selected ? 'Un día sin eventos cargados' : monthView ? 'No hay eventos cargados este mes' : 'No hay eventos cargados esta semana'} description="Elegí otra fecha, consultá el mes completo o actualizá la agenda." />}
+        {shown.length === 1 && hero && <Body small muted>No hay otros eventos cargados para este período.</Body>}
+        {hasMore && <Button title={query.isFetchingNextPage || adjacent.isFetchingNextPage ? 'Cargando…' : 'Cargar más eventos'} disabled={query.isFetchingNextPage || adjacent.isFetchingNextPage} onPress={() => { if (query.hasNextPage) void query.fetchNextPage(); if (crossing && adjacent.hasNextPage) void adjacent.fetchNextPage(); }} />}
+        {(query.isFetchNextPageError || (crossing && adjacent.isFetchNextPageError)) && <Body>No pudimos cargar más eventos. Volvé a intentar.</Body>}
+        <Button title="Actualizar eventos" variant="outline" disabled={query.isRefetching || (crossing && adjacent.isRefetching)} onPress={refresh} />
       </View>
     </>}
-    {google.data && !google.data.enabled && <Body small>El guardado automático requiere que el administrador configure la conexión con Google. Podés guardar los eventos mediante el enlace a Google Calendar.</Body>}
-  </ScrollView>;
+    {(google.isError || google.fetchStatus === 'paused') && <Body small>No pudimos consultar la conexión con Google Calendar. Podés abrir el enlace del evento y confirmar el guardado allí.</Body>}
+    {google.data && !google.data.enabled && <Body small>Podés abrir los eventos en Google Calendar y confirmar Guardar allí.</Body>}
+  </ScrollView><BottomNavigation current="calendar" /></View>;
 }
