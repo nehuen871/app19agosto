@@ -5,6 +5,7 @@ import { mediaRouter } from './media';
 import { eventsRouter } from './events';
 import { googleCalendarRouter } from './google-calendar';
 import { adminNewsRouter } from './admin-news';
+import { adminCategoriesRouter } from './admin-categories';
 import { randomUUID } from 'node:crypto';
 import { notificationsRouter } from './notifications';
 import express from 'express';
@@ -43,6 +44,7 @@ export function createApp(db: PrismaClient, options: { googleFetch?: typeof fetc
   app.use('/api/v1/google-calendar', googleCalendarRouter(db, options.googleFetch));
   app.use('/api/v1/push', pushRouter(db));
   app.use('/api/v1/admin/news', adminNewsRouter(db));
+  app.use('/api/v1/admin/categories', adminCategoriesRouter(db));
   app.use('/api/v1/admin/notifications', notificationsRouter(db));
   app.get('/health/live', (_req, res) => { res.json({ status: 'ok' }); });
   app.get(['/health', '/health/ready'], async (_req, res) => {
@@ -52,7 +54,14 @@ export function createApp(db: PrismaClient, options: { googleFetch?: typeof fetc
   app.get('/api/v1/categories', async (_req, res) => { res.json(await db.category.findMany({ orderBy: { name: 'asc' } })); });
   app.get('/api/v1/news', async (req, res) => {
     const { page, limit, category, featured } = newsQuery.parse(req.query);
-    const where = { status: 'PUBLISHED' as const, publishedAt: { lte: new Date() }, ...(category ? { category: { slug: category } } : {}), ...(featured !== undefined ? { featured } : {}) };
+    const descendants = category ? await db.$queryRaw<{ id: string }[]>`
+      WITH RECURSIVE tree AS (
+        SELECT "id" FROM "Category" WHERE "slug" = ${category}
+        UNION
+        SELECT child."id" FROM "Category" child JOIN tree ON child."parentId" = tree."id"
+      ) SELECT "id" FROM tree
+    ` : [];
+    const where = { status: 'PUBLISHED' as const, publishedAt: { lte: new Date() }, ...(category ? { categoryId: { in: descendants.map(item => item.id) } } : {}), ...(featured !== undefined ? { featured } : {}) };
     const [items, total] = await db.$transaction([db.news.findMany({ where, include: { category: true }, orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * limit, take: limit }), db.news.count({ where })]);
     res.json({ items, total, page, limit });
   });

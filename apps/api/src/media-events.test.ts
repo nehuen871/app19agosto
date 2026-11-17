@@ -12,7 +12,7 @@ const token = testAdminToken(), app = createApp(db);
 const imageIds: string[] = [], eventIds: string[] = [], newsIds: string[] = [];
 const prefix = 'media-test-' + randomUUID();
 const png = readFileSync(new URL('../../../packages/brand-assets/isotype/brand-isotype.png', import.meta.url));
-before(async () => { await createTestAdmin(db, token); });
+before(async () => { await createTestAdmin(db, token); await db.category.create({ data: { name: prefix, slug: prefix } }); });
 after(async () => {
   await db.auditLog.deleteMany({ where: { entityId: { in: [...imageIds, ...eventIds, ...newsIds] } } });
   await db.news.deleteMany({ where: { id: { in: newsIds } } });
@@ -37,11 +37,11 @@ test('uploaded image persists and can be attached to published news and served s
   const image = await request(app).get(uploaded.body.url).set('Authorization', `Bearer ${token}`).expect(200);
   assert.equal(image.headers['content-type'], 'image/png'); assert.equal(image.headers['x-content-type-options'], 'nosniff');
   assert.ok(Buffer.from(image.body).equals(png));
-  const input = { title: 'Imagen persistente', slug: prefix, category: prefix, summary: 'Resumen', content: 'Texto', coverImageId: uploaded.body.id, status: 'PUBLISHED' };
+  const input = { title: 'Imagen persistente', category: prefix, summary: 'Resumen', content: 'Texto', coverImageId: uploaded.body.id, status: 'PUBLISHED' };
   const created = await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send(input).expect(201);
   newsIds.push(created.body.id); assert.equal(created.body.coverImageUrl, uploaded.body.url);
-  const detail = await request(app).get('/api/v1/news/' + prefix).set('Authorization', `Bearer ${token}`).expect(200); assert.equal(detail.body.coverImageUrl, uploaded.body.url);
-  await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send({ ...input, slug: prefix + '-missing', coverImageId: randomUUID() }).expect(400);
+  const detail = await request(app).get('/api/v1/news/' + created.body.slug).set('Authorization', `Bearer ${token}`).expect(200); assert.equal(detail.body.coverImageUrl, uploaded.body.url);
+  await request(app).post('/api/v1/admin/news').set('Authorization', `Bearer ${token}`).send({ ...input, coverImageId: randomUUID() }).expect(400);
   await request(app).get('/api/v1/media/../../.env').expect(404);
 });
 const input = { title: 'Evento de prueba', description: '<script>Texto literal</script>', location: 'Campus', startsAt: '2030-06-30T23:30:00-03:00', endsAt: '2030-07-01T01:00:00-03:00', color: 'YELLOW', status: 'DRAFT' };

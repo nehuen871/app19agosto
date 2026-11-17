@@ -78,7 +78,11 @@ model Category {
   id String @id @default(cuid())
   name String
   slug String @unique
+  parentId String?
+  parent Category? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryTree")
   news News[]
+  @@index([parentId])
 }
 model News {
   id String @id @default(cuid())

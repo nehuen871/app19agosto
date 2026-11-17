@@ -10,6 +10,7 @@ export const newsSummary = newsRichField('Resumen', richLimit, richStorageLimit)
 export const newsContent = newsRichField('Contenido', richContentLimit, richContentStorageLimit);
 export const newsQuery = z.object({ page: z.coerce.number().int().min(1).max(10000).default(1), limit: z.coerce.number().int().min(1).max(100).default(20), category: z.string().trim().min(1).max(100).optional(), featured: z.enum(['true','false']).optional().transform(v => v === undefined ? undefined : v === 'true') });
 export const slugParam = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(160);
+export const categoryInput = z.object({ name: z.string().trim().min(1).max(100).refine(value => /[a-z0-9]/i.test(value.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))), parentId: z.cuid().nullable().optional() }).strict();
 
 export const notificationDraft = z.object({
   title: z.string().trim().min(1, 'Ingresá un título.').max(100, 'El título admite hasta 100 caracteres.'),
@@ -23,10 +24,9 @@ export const notificationQuery = z.object({
 
 export const newsInput = z.object({
   title: z.string().trim().min(1).max(160),
-  slug: slugParam,
   summary: newsSummary,
   content: newsContent,
-  category: z.string().trim().min(1).max(100).refine(value => /[a-z0-9]/i.test(value.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))),
+  category: slugParam.max(100), // Slug of an existing category; news writes never create categories.
   coverImageUrl: z.string().url().refine(value => ['http:', 'https:'].includes(new URL(value).protocol)).nullable().optional(),
   coverImageId: z.uuid().nullable().optional(),
   featured: z.boolean().default(false),

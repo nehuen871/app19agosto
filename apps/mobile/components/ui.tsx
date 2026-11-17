@@ -62,10 +62,10 @@ export function Badge({ children, featured = false, variant = 'secondary' }: Pro
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   title: string; variant?: ButtonVariant; size?: keyof typeof componentTokens.sizes;
-  loading?: boolean; leading?: ReactNode; iconOnly?: boolean; style?: StyleProp<ViewStyle>;
+  loading?: boolean; leading?: ReactNode; iconOnly?: boolean; style?: StyleProp<ViewStyle>; textStyle?: StyleProp<TextStyle>;
 };
 export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(function Button({
-  title, disabled = false, variant = 'primary', size = 'md', loading = false, leading, iconOnly = false, style,
+  title, disabled = false, variant = 'primary', size = 'md', loading = false, leading, iconOnly = false, style, textStyle,
   onFocus, onBlur, onHoverIn, onHoverOut, accessibilityState, ...props
 }, ref) {
   const [focused, setFocused] = useState(false), [hovered, setHovered] = useState(false);
@@ -79,7 +79,7 @@ export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(fu
       variant === 'ghost' && styles.buttonGhost, variant === 'danger' && styles.buttonDanger,
       hovered && !blocked && styles.pressed, pressed && styles.pressed, focused && styles.focused, blocked && styles.disabled, style]}>
     {loading ? <ActivityIndicator color={lightText ? theme.primaryForeground : theme.primary} accessibilityElementsHidden /> : leading}
-    {!iconOnly && <TextStyleContext value={[styles.buttonText, !lightText && styles.buttonSecondaryText]}><Text>{title}</Text></TextStyleContext>}
+    {!iconOnly && <TextStyleContext value={[styles.buttonText, !lightText && styles.buttonSecondaryText, textStyle]}><Text>{title}</Text></TextStyleContext>}
   </Pressable>;
 });
 export function LoadingIndicator({ title = 'Cargando noticias…' }: { title?: string }) {
