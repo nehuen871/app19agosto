@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import type { News } from '@utn/api-client';
+import { categoryPath, type News } from '@utn/api-client';
 import { api } from '../services/api';
 import { BottomNavigation } from '../components/bottom-navigation';
 import { Body, Button, Heading, EmptyState, NewsSkeleton, QueryNotice, Text, useScreenContentStyle, styles } from '../components/ui';
@@ -15,6 +15,7 @@ export default function NewsScreen() {
   const query = useQuery({ queryKey: ['news', category, page], queryFn: ({ signal }) => api.news(page, signal, { category }) });
   const featured = useQuery({ queryKey: ['news-featured', category], queryFn: ({ signal }) => api.news(1, signal, { category, featured: true, limit: 1 }), enabled: page === 1 });
   const categories = useQuery({ queryKey: ['news-categories'], queryFn: ({ signal }) => api.categories(signal) });
+  const path = categoryPath(categories.data ?? [], category);
   const hero = page === 1 && query.data ? featured.data?.items[0] ?? query.data.items[0] : undefined;
   const rows = (query.data?.items ?? []).filter(item => item.id !== hero?.id);
   const pages = query.data ? Math.max(1, Math.ceil(query.data.total / query.data.limit)) : 1;
@@ -34,8 +35,16 @@ export default function NewsScreen() {
         <View style={newsStyles.introduction}><Text style={newsStyles.eyebrow}>Tu comunidad, al día</Text><Heading style={newsStyles.screenTitle}>Lo que importa.</Heading></View>
         <View style={newsStyles.filters} accessibilityLabel="Filtrar noticias por categoría">
           <Button title="Todas" size="sm" variant={!category ? 'primary' : 'outline'} accessibilityState={{ selected: !category }} style={newsStyles.filter} onPress={() => select('')} />
-          {categories.data?.map(item => <Button key={item.id} title={item.name} size="sm" variant={category === item.slug ? 'primary' : 'outline'} accessibilityLabel={`Filtrar por ${item.name}`} accessibilityState={{ selected: category === item.slug }} style={newsStyles.filter} onPress={() => select(item.slug)} />)}
+          {categories.data?.filter(item => !item.parentId).map(item => <Button key={item.id} title={item.name} size="sm" variant={path[0]?.slug === item.slug ? 'primary' : 'outline'} accessibilityLabel={`Filtrar por ${item.name}`} accessibilityState={{ selected: path[0]?.slug === item.slug }} style={newsStyles.filter} onPress={() => select(item.slug)} />)}
         </View>
+        {path.map((parent, level) => {
+          const children = categories.data?.filter(item => item.parentId === parent.id) ?? [];
+          return children.length ? <View key={parent.id} style={styles.section}><Body small>Dentro de {parent.name}</Body><View style={newsStyles.filters} accessibilityLabel={`Subcategorías de ${parent.name}`}>
+            <Button title="Todas" size="sm" variant={category === parent.slug ? 'primary' : 'outline'} accessibilityLabel={`Todas las noticias de ${parent.name}`} accessibilityState={{ selected: category === parent.slug }} style={newsStyles.filter} onPress={() => select(parent.slug)} />
+            {children.map(item => <Button key={item.id} title={item.name} size="sm" variant={path[level + 1]?.slug === item.slug ? 'primary' : 'outline'} accessibilityLabel={`Filtrar por ${item.name}`} accessibilityState={{ selected: path[level + 1]?.slug === item.slug }} style={newsStyles.filter} onPress={() => select(item.slug)} />)}
+          </View></View> : null;
+        })}
+        {path.length > 1 && <Body small muted>{path.map(item => item.name).join(' → ')}</Body>}
         {!categories.data && categories.isLoading && <Body small muted>Cargando categorías…</Body>}
         {(categories.isError || categories.fetchStatus === 'paused') && <View style={newsStyles.notice}><Body small>{categories.fetchStatus === 'paused' ? 'Los filtros se actualizarán al recuperar la conexión.' : 'No pudimos actualizar los filtros. Podés seguir leyendo las noticias.'}</Body><Button title="Reintentar filtros" variant="ghost" size="sm" onPress={() => void categories.refetch()} /></View>}
         {query.data && <QueryNotice paused={paused} failed={failed} onRetry={refresh} />}

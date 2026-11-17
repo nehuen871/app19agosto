@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { AdminNews } from '@utn/api-client';
+import { categoryLabel, type AdminNews, type Category } from '@utn/api-client';
 import { NewsVisibilityButton } from './visibility-button';
 import { NewsForm } from './form';
 const statuses = { PUBLISHED: 'Publicada', DRAFT: 'Borrador', ARCHIVED: 'Oculta' };
-export function NewsManager({ news, total, page, limit }: { news: AdminNews[]; total: number; page: number; limit: number }) {
+export function NewsManager({ news, total, page, limit, categories }: { categories: Category[]; news: AdminNews[]; total: number; page: number; limit: number }) {
   const [editor, setEditor] = useState<{ news?: AdminNews } | null>(null);
   const panel = useRef<HTMLElement>(null), createButton = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
@@ -25,7 +25,7 @@ export function NewsManager({ news, total, page, limit }: { news: AdminNews[]; t
           <thead><tr><th scope="col">Noticia</th><th scope="col">Categoría</th><th scope="col">Estado</th><th scope="col">Publicación</th><th scope="col">Acciones</th></tr></thead>
           <tbody>{news.map(item => <tr key={item.id}>
             <th scope="row"><span className="record-table-title">{item.title}</span>{item.featured && <span className="badge featured">Destacada</span>}</th>
-            <td>{item.category.name}</td><td><span className="badge">{statuses[item.status]}</span></td>
+            <td>{categoryLabel(categories, item.category)}</td><td><span className="badge">{statuses[item.status]}</span></td>
             <td>{item.publishedAt ? <time dateTime={item.publishedAt}>{new Date(item.publishedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })}</time> : 'Sin publicar'}</td>
             <td><div className="record-actions"><button className="button-secondary" onClick={() => setEditor({ news: item })} aria-label={`Editar ${item.title}`} aria-controls="news-editor">Editar</button><NewsVisibilityButton id={item.id} title={item.title} published={item.status === 'PUBLISHED'} editing={false} /></div></td>
           </tr>)}</tbody>
@@ -35,7 +35,7 @@ export function NewsManager({ news, total, page, limit }: { news: AdminNews[]; t
     </section>}
     {editor && <section ref={panel} id="news-editor" className="record-editor" aria-labelledby="news-editor-heading">
       <div className="section-heading"><h2 id="news-editor-heading">{editor.news ? 'Editar noticia' : 'Crear noticia'}</h2><button className="button-secondary" onClick={() => { setEditor(null); }}>Volver al listado</button></div>
-      <NewsForm key={editor.news?.id ?? 'new'} news={editor.news} />
+      <NewsForm key={editor.news?.id ?? 'new'} news={editor.news} categories={categories} />
     </section>}
   </div>;
 }

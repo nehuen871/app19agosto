@@ -36,7 +36,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <div className="header-account-brand"><AccountHeader /><BrandMark /></div>
         <span className="header-label">Comunicación institucional</span>
       </div></header>
-      <nav className="admin-nav" aria-label="Administración"><a href="/admin">Noticias</a><a href="/admin/events">Calendario</a><a href="/admin/notifications">Notificaciones</a></nav>
+      <nav className="admin-nav" aria-label="Administración"><a href="/admin">Noticias</a><a href="/admin/categories">Categorías</a><a href="/admin/events">Calendario</a><a href="/admin/notifications">Notificaciones</a></nav>
       <main id="contenido">{children}</main>
     </body>
   </html>;

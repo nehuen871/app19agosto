@@ -181,6 +181,29 @@ News
 Mobile tendrá Destacadas, Últimas noticias, Categorías y Detalle.
 `NewsCard` soportará `default`, `featured` y `compact`.
 
+Las categorías se gestionan en `/admin/categories`: alta, edición y baja de
+categorías sin noticias asociadas. Las existentes conservan sus asociaciones.
+El editor de noticias ofrece un selector obligatorio, sin alta libre. En los
+payloads de alta/edición de noticias, `category` es el slug de una categoría
+existente; la API rechaza valores inexistentes y nunca crea categorías desde
+una noticia. El ABM requiere sesión administrativa, pagina los resultados,
+rechaza nombres duplicados normalizados y registra los cambios en auditoría.
+Renombrar una categoría actualiza su nombre y slug, conservando su ID y noticias.
+
+Las categorías forman un árbol mediante `parentId` opcional. Cada nodo puede
+tener varias hijas y la noticia guarda una sola categoría, la más específica
+de su rama. El editor presenta selectores encadenados y permite detenerse en
+cualquier nivel. El filtro `category` incluye el nodo elegido y todos sus
+descendientes, también para destacadas y paginación. La app muestra filtros
+por nivel y la ruta elegida. No se permiten padres inexistentes ni ciclos,
+incluidas modificaciones concurrentes; no se eliminan nodos con hijas o noticias.
+La migración es aditiva: todas las categorías previas quedan como raíces.
+
+Los identificadores de noticias son automáticos e inmutables: Prisma genera el
+ID interno y la API genera un UUID aleatorio para el identificador del enlace
+(`slug`). Ni el alta ni la edición aceptan `id` o `slug` en el cuerpo. Cambiar
+el título no cambia el enlace. Las noticias existentes conservan sus enlaces.
+
 Usar paginación y filtros:
 
 ``` text

@@ -14,6 +14,15 @@ Las imágenes de aplicación usan Node 22, usuario sin privilegios, filesystem d
 
 Para desarrollo: `docker compose -f compose.yaml -f compose.dev.yaml up --build`. Los mounts/watch son exclusivos de ese override. Expo se ejecuta aparte con `pnpm --filter @utn/mobile start`; configurar `EXPO_PUBLIC_API_URL` con una dirección accesible desde el dispositivo.
 
+## Datos de prueba por comando
+
+Las cargas de [100 noticias](apps/api/prisma/seed-news-demo.ts) y
+[500 eventos](apps/api/prisma/seed-events-demo.ts) son archivos reutilizables
+incluidos en el repositorio. Se ejecutan exclusivamente con `pnpm demo:news`,
+`pnpm demo:events` o `pnpm demo:all`, nunca al iniciar o desplegar la aplicación.
+No generan notificaciones ni duplican registros al repetir la carga.
+Ver [comandos con Docker y sin Docker](docs/datos-de-prueba.md).
+
 ## Validación
 
 Con Node 22 y pnpm 10.28.2: `pnpm install --frozen-lockfile`, generar Prisma con `pnpm --filter @utn/api exec prisma generate`, luego `pnpm lint`, `pnpm typecheck`, `pnpm test:security`. `pnpm test` requiere `DATABASE_URL` de una base descartable con las migraciones aplicadas; crea y elimina fixtures.

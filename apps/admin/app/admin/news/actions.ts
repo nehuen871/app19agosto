@@ -5,7 +5,7 @@ export async function saveNews(id: string | null, previous: { error: string; sav
   const value = (name: string) => { const item = data.get(name); return typeof item === 'string' ? item : ''; };
   try {
     const api = await requireAdmin('action');
-    const input = { title: value('title'), slug: value('slug'), summary: value('summary'), content: value('content'), category: value('category'), coverImageUrl: value('coverImageUrl') || null, coverImageId: value('coverImageId') || null, featured: data.get('featured') === 'on' };
+    const input = { title: value('title'), summary: value('summary'), content: value('content'), category: value('category'), coverImageUrl: value('coverImageUrl') || null, coverImageId: value('coverImageId') || null, featured: data.get('featured') === 'on' };
     if (id) await api.updateNews(id, { ...input, status: value('status') === 'PUBLISHED' ? 'PUBLISHED' : value('status') === 'ARCHIVED' ? 'ARCHIVED' : 'DRAFT' });
     else await api.createNews({ ...input, status: value('status') === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT' });
   } catch (error) {
