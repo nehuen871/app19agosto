@@ -11,7 +11,7 @@ Copiar `.env.example` a `.env` y completar las variables. Se pueden mantener arc
 | `API_INTERNAL_URL` | Origen de la API utilizado por el proxy web, sin `/api/v1`. |
 | `EXPO_PUBLIC_WEB_API_URL` | API de la web compilada. `/api/v1` utiliza el proxy del mismo dominio y conserva las cookies del login. |
 | `EXPO_PUBLIC_API_URL` | API accesible desde Android/iOS, con `/api/v1`. En un teléfono usar un dominio HTTPS público, nunca localhost. |
-| `EXPO_PUBLIC_DEV_WEB_API_URL` | API para Expo web con Compose de desarrollo, que no usa el proxy de producción. |
+| `EXPO_PUBLIC_DEV_WEB_API_URL` | API para Expo web con Compose de desarrollo; `/api/v1` usa el proxy compartido con producción. |
 | `GOOGLE_REDIRECT_URI` | Callback de Google Calendar: `${APP_PUBLIC_URL}/api/v1/google-calendar/callback`, escribiendo la URL completa. |
 | `DATABASE_URL` | Opcional: conexión PostgreSQL externa. Si se omite, Compose construye la conexión a su servicio `db`. |
 | `BIND_ADDRESS` | IP donde Docker publica puertos. Predeterminada: `127.0.0.1`. |
@@ -61,7 +61,7 @@ Los scripts `pnpm --filter @utn/mobile start` y `export:web` leen también las v
 ENV_FILE=.env.development pnpm --filter @utn/mobile start
 ```
 
-Al iniciar Expo web directamente, configurar `EXPO_PUBLIC_WEB_API_URL` con la URL absoluta de la API, ya que ese servidor de desarrollo no incluye el proxy web de producción. En Compose de desarrollo se utiliza `EXPO_PUBLIC_DEV_WEB_API_URL`.
+Expo web en desarrollo incluye el mismo proxy de API que la web compilada mediante `metro.config.mjs`. Usar `EXPO_PUBLIC_WEB_API_URL=/api/v1` y `API_INTERNAL_URL=http://localhost:4000` al ejecutar Expo fuera de Docker. En Compose, `EXPO_PUBLIC_DEV_WEB_API_URL` predetermina `/api/v1` y la conexión interna usa `http://api:4000`. El proxy conserva las redirecciones y cookies del login, y no expone endpoints administrativos. Esto evita que Expo Router interprete `/api/v1/auth/google/start` o su callback como pantallas.
 
 Expo incorpora las variables públicas durante la compilación: cambiar una URL de cliente requiere reconstruir web/APK/IPA. Las variables internas del panel y del proxy se aplican al recrear sus contenedores. Un cambio de dominio exige registrar en Google ambos callbacks de login (`/api/v1/auth/google/callback` en la app y `/admin/oauth/callback` en el panel), además del callback de Calendar si se utiliza. Para producción, mantener la web y sus endpoints de sesión bajo el mismo origen mediante el proxy.
 

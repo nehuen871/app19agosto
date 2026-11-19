@@ -1,0 +1,80 @@
+import express from 'express';
+
+/** Shared allowlisted API routes for the exported web app and Expo development. */
+export function createMobileApiProxy(apiInternalUrl) {
+  apiInternalUrl = apiInternalUrl.replace(/\/+$/, '');
+  const app = express();
+  app.disable('x-powered-by');
+  app.get('/health/live', (_req, res) => res.json({ status: 'ok' }));
+  // Protected reads forward the browser session; OAuth entry points remain public.
+  app.get(['/api/v1/news', '/api/v1/news/:slug', '/api/v1/categories', '/api/v1/events'], async (req, res) => {
+    try {
+      const upstream = await fetch(`${apiInternalUrl}${req.originalUrl}`, { headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(10000) });
+      res.status(upstream.status).set('Cache-Control', 'private, no-store').type('application/json').send(await upstream.text());
+    } catch { res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'El servicio no está disponible.', details: [] } }); }
+  });
+  app.get('/api/v1/media/:id', async (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
+    if (!/^[a-f0-9-]{36}$/.test(req.params.id)) { res.sendStatus(404); return; }
+    try {
+      const response = await fetch(`${apiInternalUrl}${req.path}`, { headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(10000) });
+      if (!response.ok) { res.sendStatus(response.status); return; }
+      const type = response.headers.get('Content-Type');
+      if (!['image/png', 'image/jpeg'].includes(type)) { res.sendStatus(502); return; }
+      res.set({ 'Content-Type': type, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }).send(Buffer.from(await response.arrayBuffer()));
+    } catch { res.sendStatus(503); }
+  });
+  app.get('/api/v1/push/config', async (_req, res) => {
+    try { const upstream = await fetch(`${apiInternalUrl}/api/v1/push/config`, { signal: AbortSignal.timeout(10000) }); res.status(upstream.status).type('application/json').send(await upstream.text()); }
+    catch { res.sendStatus(503); }
+  });
+  app.get(['/api/v1/google-calendar/config', '/api/v1/google-calendar/start', '/api/v1/google-calendar/callback'], async (req, res) => {
+    try {
+      const response = await fetch(`${apiInternalUrl}${req.originalUrl}`, { redirect: 'manual', headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(35000) });
+      res.status(response.status).set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+      const location = response.headers.get('Location'); if (location) res.set('Location', location);
+      const cookies = response.headers.getSetCookie(); if (cookies.length) res.set('Set-Cookie', cookies);
+      res.type(response.headers.get('Content-Type') ?? 'text/plain').send(await response.text());
+    } catch { res.sendStatus(503); }
+  });
+  app.get(['/api/v1/auth/config', '/api/v1/auth/google/start', '/api/v1/auth/google/callback', '/api/v1/auth/me'], async (req, res) => {
+    try {
+      // Admin authentication is only exposed through the admin origin.
+      if (req.query.purpose && req.query.purpose !== 'app') { res.sendStatus(404); return; }
+      const response = await fetch(`${apiInternalUrl}${req.originalUrl}`, { redirect: 'manual', headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(35000) });
+      res.status(response.status).set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+      const location = response.headers.get('Location'); if (location) res.set('Location', location);
+      const cookies = response.headers.getSetCookie(); if (cookies.length) res.set('Set-Cookie', cookies);
+      res.type(response.headers.get('Content-Type') ?? 'text/plain').send(await response.text());
+    } catch { res.sendStatus(503); }
+  });
+  app.use(express.json({ limit: '8kb' }));
+  app.post('/api/v1/google-calendar/authorize', async (req, res) => {
+    try {
+      const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
+      res.status(response.status).set('Cache-Control', 'no-store').type('application/json').send(await response.text());
+    } catch { res.sendStatus(503); }
+  });
+  app.patch('/api/v1/auth/me', async (req, res) => {
+    try {
+      const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
+      res.status(response.status).set('Cache-Control', 'no-store').type('application/json').send(await response.text());
+    } catch { res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'No pudimos guardar tu perfil.', details: [] } }); }
+  });
+  app.post(['/api/v1/auth/logout', '/api/v1/auth/refresh'], async (req, res) => {
+    try {
+      const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: '{}', signal: AbortSignal.timeout(10000) });
+      res.status(response.status).set('Cache-Control', 'no-store');
+      const cookies = response.headers.getSetCookie(); if (cookies.length) res.set('Set-Cookie', cookies);
+      if (response.status === 204) res.end(); else res.type(response.headers.get('Content-Type') ?? 'text/plain').send(await response.text());
+    } catch { res.sendStatus(503); }
+  });
+  app.post(['/api/v1/push/subscriptions', '/api/v1/push/unsubscribe'], async (req, res) => {
+    try {
+      const upstream = await fetch(`${apiInternalUrl}${req.path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
+      res.status(upstream.status); if (upstream.status === 204) res.end(); else res.type('application/json').send(await upstream.text());
+    } catch { res.sendStatus(503); }
+  });
+  app.use('/api', (_req, res) => res.sendStatus(404));
+  return app;
+}
