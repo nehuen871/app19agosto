@@ -28,6 +28,6 @@ export function RichSummary({ value, style, onHero = false }: { value: string; s
     if (node.type === 'blockquote') return <View key={index} style={[styles.quote, onHero && styles.heroQuote]}>{node.content?.map(block)}</View>;
     return <View key={index} style={styles.blocks}>{node.content?.map(block)}</View>;
   }
-  return <View style={styles.blocks}>{(decodeRich(value) ?? plainDocument(value)).content?.map(block)}{error && <View accessibilityRole="alert"><Body small>{error}</Body></View>}</View>;
+  return <View style={styles.blocks}>{(decodeRich(value) ?? plainDocument(value)).content?.map(block)}{Boolean(error) && <View accessibilityRole="alert"><Body small>{error}</Body></View>}</View>;
 }
 const styles = StyleSheet.create({ blocks: { gap: spacing.sm }, listItem: { flexDirection: 'row', gap: spacing.sm }, listCopy: { flex: 1, gap: spacing.sm }, quote: { borderLeftWidth: spacing.xs, borderLeftColor: colors.light.border, paddingLeft: spacing.md, gap: spacing.sm }, heroQuote: { borderLeftColor: colors.light.primaryForeground } });
