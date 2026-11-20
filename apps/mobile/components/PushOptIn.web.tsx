@@ -39,6 +39,6 @@ export function PushOptIn({ variant = 'panel' }: { variant?: 'panel' | 'embedded
   }
   return <View style={[styles.preferencePanel, variant === 'embedded' && styles.preferenceEmbedded]}><View style={styles.preferenceText}><Heading level={3}>Notificaciones</Heading><Body small muted>Recibí avisos de nuevas publicaciones.</Body></View>
     {supported ? <Button size="sm" loading={busy} title={busy ? 'Configurando…' : enabled ? 'Desactivar notificaciones' : 'Activar notificaciones'} disabled={busy} variant="secondary" onPress={() => { void toggle(); }} /> : <Body small>Las notificaciones requieren un navegador compatible y conexión HTTPS (localhost también funciona).</Body>}
-    {message && <Body small>{message}</Body>}
+    {Boolean(message) && <Body small>{message}</Body>}
   </View>;
 }

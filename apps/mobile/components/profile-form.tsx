@@ -20,7 +20,7 @@ export function ProfileForm({ initialName, initialSpecialty }: { initialName: st
     <Body>Nombre</Body><TextInput accessibilityLabel="Nombre" value={name} onChangeText={value => { setName(value); setSaved(false); }} maxLength={200} autoComplete="name" editable={!pending} style={styles.profileInput} returnKeyType="done" onSubmitEditing={() => void save()} />
     <Body>Especialidad</Body><SpecialtySelect value={specialty} disabled={pending} onChange={value => { setSpecialty(value); setSaved(false); }} />
     <Body small muted>El correo de Google identifica tu cuenta y no se modifica desde acá.</Body>
-    {error && <View accessibilityRole="alert"><Body>{error}</Body></View>}{saved && <View accessibilityLiveRegion="polite"><Body>Datos de la cuenta guardados.</Body></View>}
+    {Boolean(error) && <View accessibilityRole="alert"><Body>{error}</Body></View>}{saved && <View accessibilityLiveRegion="polite"><Body>Datos de la cuenta guardados.</Body></View>}
     <Button title={pending ? 'Guardando…' : 'Guardar cambios'} loading={pending} onPress={() => void save()} />
   </View>;
 }

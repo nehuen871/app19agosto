@@ -48,6 +48,7 @@ function AppStack() {
       <Stack.Screen name="index" options={{ title: 'Noticias', animation: 'none' }} />
       <Stack.Screen name="calendar" options={{ title: 'Calendario', animation: 'none' }} />
       <Stack.Screen name="student" options={{ title: 'Estudiante', animation: 'none' }} />
+      <Stack.Screen name="student-path" options={{ title: 'Mi recorrido', animation: 'none' }} />
       <Stack.Screen name="news/[slug]" options={{ title: 'Noticia' }} />
       </Stack.Protected>
       <Stack.Screen name="account" options={{ title: auth.user ? 'Mi cuenta' : 'Ingresar', animation: 'none' }} />

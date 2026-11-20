@@ -55,7 +55,7 @@ export default function CalendarScreen() {
       </View>
       <Heading style={newsStyles.screenTitle}>Hacé lugar a lo que viene.</Heading>
     </View>
-    {googleResult && results[googleResult] && <Body>{results[googleResult]}</Body>}
+    {!!googleResult && results[googleResult] && <Body>{results[googleResult]}</Body>}
     <View style={es.section}>
       <View style={es.calendarNavigation}>
         {monthView && <CalendarArrow direction="previous" label="Mes anterior" disabled={month === '2000-01'} onPress={() => changeMonth(-1)} />}
