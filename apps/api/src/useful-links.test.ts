@@ -39,7 +39,7 @@ test('strict fields, bounded input, image references and safe external URL schem
   await request(app).get(endpoint + '?limit=101').set(auth).expect(400);
   await request(app).get('/api/v1/useful-links?page=0').set('Authorization', `Bearer ${reader}`).expect(400);
 });
-test('published links appear in importance order regardless of featured, with images and pagination; drafts stay private', async () => {
+test('featured links come first across pagination, with importance order within each group; drafts stay private', async () => {
   const app = createApp(db), auth = { Authorization: `Bearer ${admin}` };
   for (const [priority, featured, published] of [[1, false, true], [2, true, true], [3, false, true], [1, true, false]] as const) {
     const result = await request(app).post(endpoint).set(auth).send({ ...input(), priority, featured, published }).expect(201); ids.push(result.body.id);
@@ -47,8 +47,10 @@ test('published links appear in importance order regardless of featured, with im
   }
   const response = await request(app).get('/api/v1/useful-links?limit=2').set('Authorization', `Bearer ${reader}`).expect(200);
   assert.match(response.headers['cache-control'], /private.*no-store/);
-  assert.equal(response.body.total, 3); assert.deepEqual(response.body.items.map((i: { priority: number }) => i.priority), [1, 2]);
-  assert.equal(response.body.items[1].featured, true); assert.equal(response.body.items[0].imageUrl, `/api/v1/media/${imageId}`);
+  assert.equal(response.body.total, 3); assert.deepEqual(response.body.items.map((i: { priority: number }) => i.priority), [2, 1]);
+  assert.equal(response.body.items[0].featured, true); assert.equal(response.body.items[1].featured, false); assert.equal(response.body.items[0].imageUrl, `/api/v1/media/${imageId}`);
+  const featuredPage = await request(app).get('/api/v1/useful-links?limit=1').set('Authorization', `Bearer ${reader}`).expect(200);
+  assert.equal(featuredPage.body.items[0].featured, true);
   const second = await request(app).get('/api/v1/useful-links?limit=2&page=2').set('Authorization', `Bearer ${reader}`).expect(200); assert.equal(second.body.items[0].priority, 3);
   assert.equal((await request(app).get(endpoint).set(auth).expect(200)).body.total, 4);
   assert.equal(await db.auditLog.count({ where: { entityId: { in: ids }, action: 'USEFUL_LINK_CREATED' } }), 4);

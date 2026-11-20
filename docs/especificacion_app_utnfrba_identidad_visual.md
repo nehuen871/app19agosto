@@ -181,8 +181,9 @@ pequeñas y texto ampliado.
 El ABM `/admin/useful-links` administra título, descripción de hasta 500
 caracteres, imagen PNG/JPEG subida al almacenamiento existente, URL HTTP/HTTPS,
 prioridad de 1 a 9999, destacado y publicación. Menor prioridad numérica aparece
-primero; el ID resuelve empates de forma estable. Un destacado conserva su
-posición en el orden, cambiando solamente su tamaño visual.
+primero dentro de cada grupo; el ID resuelve empates de forma estable.
+Los destacados se muestran antes que los demás enlaces. La API aplica este
+orden antes de paginar, tanto para la app como para el listado administrativo.
 
 La API `GET /api/v1/useful-links` requiere sesión, pagina y devuelve únicamente
 publicados no eliminados. Los métodos administrativos requieren sesión ADMIN,

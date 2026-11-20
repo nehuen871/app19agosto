@@ -16,10 +16,11 @@ Para desarrollo: `docker compose -f compose.yaml -f compose.dev.yaml up --build`
 
 ## Datos de prueba por comando
 
-Las cargas de [100 noticias](apps/api/prisma/seed-news-demo.ts) y
-[500 eventos](apps/api/prisma/seed-events-demo.ts) son archivos reutilizables
+Las cargas de [100 noticias](apps/api/prisma/seed-news-demo.ts),
+[500 eventos](apps/api/prisma/seed-events-demo.ts) y
+[16 links útiles con imágenes](apps/api/prisma/seed-useful-links-demo.ts) son archivos reutilizables
 incluidos en el repositorio. Se ejecutan exclusivamente con `pnpm demo:news`,
-`pnpm demo:events` o `pnpm demo:all`, nunca al iniciar o desplegar la aplicación.
+`pnpm demo:events`, `pnpm demo:links` o `pnpm demo:all`, nunca al iniciar o desplegar la aplicación.
 No generan notificaciones ni duplican registros al repetir la carga.
 Ver [comandos con Docker y sin Docker](docs/datos-de-prueba.md).
 
