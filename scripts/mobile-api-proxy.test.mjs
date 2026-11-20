@@ -26,6 +26,8 @@ test('web proxy preserves OAuth redirects/cookies, callback and profile requests
   assert.equal(seen.at(-1).origin, proxy.url); assert.equal(seen.at(-1).cookie, 'session=test'); assert.equal(seen.at(-1).method, 'PATCH');
   await fetch(proxy.url + '/api/v1/student', { headers: { Cookie: 'session=test' } });
   assert.equal(seen.at(-1).url, '/api/v1/student'); assert.equal(seen.at(-1).cookie, 'session=test');
+  await fetch(proxy.url + '/api/v1/useful-links?page=2', { headers: { Cookie: 'session=test' } });
+  assert.equal(seen.at(-1).url, '/api/v1/useful-links?page=2'); assert.equal(seen.at(-1).cookie, 'session=test');
   for (const [path, method] of [['/api/v1/student/plan', 'PUT'], ['/api/v1/student/courses/frba-sistemas-2023%3A1', 'PATCH']]) {
     await fetch(proxy.url + path, { method, headers: { Cookie: 'session=test', Origin: proxy.url, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'REGULAR' }) });
     assert.equal(seen.at(-1).method, method); assert.equal(seen.at(-1).origin, proxy.url); assert.equal(seen.at(-1).cookie, 'session=test'); assert.equal(seen.at(-1).url, path);

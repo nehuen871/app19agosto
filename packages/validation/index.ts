@@ -5,6 +5,13 @@ const studyRule = z.object({ regular: z.array(z.string().min(1)).max(300), appro
 export const studyRequirements = z.object({ enroll: studyRule, exam: studyRule }).strict();
 export const studentProgressInput = z.object({ status: z.enum(studyStatuses), expectedUpdatedAt: z.iso.datetime().nullable() }).strict();
 export const studentPlanInput = z.object({ planId: z.string().regex(/^[a-z0-9-]+$/).max(100) }).strict();
+export const usefulLinkInput = z.object({
+  title: z.string().trim().min(1).max(120), description: z.string().trim().min(1).max(500),
+  url: z.string().trim().max(2048).url().refine(value => { try { const url = new URL(value); return /^https?:\/\//i.test(value) && ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password; } catch { return false; } }, 'Usá una URL HTTP o HTTPS sin credenciales.'),
+  imageId: z.uuid(), priority: z.number().int().min(1).max(9999), featured: z.boolean(), published: z.boolean(),
+}).strict();
+export const usefulLinkVersion = z.object({ expectedUpdatedAt: z.iso.datetime() }).strict();
+export const usefulLinkUpdate = usefulLinkInput.extend({ expectedUpdatedAt: z.iso.datetime() });
 import { decodeRich, encodeRich, richPlain, richPrefix, richLimit, richStorageLimit, richContentLimit, richContentStorageLimit } from '@utn/types';
 function newsRichField(label: string, limit: number, storageLimit: number) { return z.string().max(storageLimit).superRefine((value, context) => {
   const doc = decodeRich(value);

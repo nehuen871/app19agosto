@@ -170,6 +170,32 @@ habilitación administrativa, vigencia de cursadas ni egreso. El indicador
 cuenta materias obligatorias y separa electivas, prácticas y título intermedio.
 La elección es declarada por el usuario y no valida su condición académica.
 
+### Estudiante: Links útiles
+
+Dentro de Estudiante, las pestañas Mi recorrido y Links útiles separan el mapa
+académico del mosaico de accesos. Los enlaces están disponibles aunque el
+usuario todavía no haya elegido especialidad. Los destacados ocupan una fila
+completa; los demás se presentan en dos columnas, con adaptación a pantallas
+pequeñas y texto ampliado.
+
+El ABM `/admin/useful-links` administra título, descripción de hasta 500
+caracteres, imagen PNG/JPEG subida al almacenamiento existente, URL HTTP/HTTPS,
+prioridad de 1 a 9999, destacado y publicación. Menor prioridad numérica aparece
+primero; el ID resuelve empates de forma estable. Un destacado conserva su
+posición en el orden, cambiando solamente su tamaño visual.
+
+La API `GET /api/v1/useful-links` requiere sesión, pagina y devuelve únicamente
+publicados no eliminados. Los métodos administrativos requieren sesión ADMIN,
+validan los campos estrictamente, rechazan URL con credenciales o protocolos
+ejecutables y registran auditoría. Edición y eliminación usan `updatedAt` para
+detectar cambios simultáneos. La baja es lógica y conserva la imagen y el
+registro de auditoría. No se crean ni envían notificaciones al guardar enlaces.
+
+La migración `202611200001_useful_links` es aditiva y no carga enlaces de
+demostración. La app utiliza el cliente compartido, TanStack Query, imágenes
+autenticadas y apertura de sitios con Linking; conserva contenido disponible
+ante errores de actualización y ofrece reintento y paginación.
+
 ## 5. Roles
 
 -   `USER`: noticias, alertas, perfil y preferencias propias.

@@ -7,7 +7,7 @@ export function createMobileApiProxy(apiInternalUrl) {
   app.disable('x-powered-by');
   app.get('/health/live', (_req, res) => res.json({ status: 'ok' }));
   // Protected reads forward the browser session; OAuth entry points remain public.
-  app.get(['/api/v1/news', '/api/v1/news/:slug', '/api/v1/categories', '/api/v1/events', '/api/v1/student'], async (req, res) => {
+  app.get(['/api/v1/news', '/api/v1/news/:slug', '/api/v1/categories', '/api/v1/events', '/api/v1/student', '/api/v1/useful-links'], async (req, res) => {
     try {
       const upstream = await fetch(`${apiInternalUrl}${req.originalUrl}`, { headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(10000) });
       res.status(upstream.status).set('Cache-Control', 'private, no-store').type('application/json').send(await upstream.text());
