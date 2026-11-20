@@ -21,13 +21,13 @@ export function EventCard({ event, googleStartUrl, variant = 'default' }: { even
   const detail = <Card accent={event.color}>
     <CardHeader><Badge>{calendarColors[event.color].label}</Badge><Heading level={3}>{event.title}</Heading></CardHeader>
     <Body small muted>{new Date(event.startsAt).toLocaleString('es-AR', { timeZone: calendarTimeZone })} – {new Date(event.endsAt).toLocaleString('es-AR', { timeZone: calendarTimeZone })}</Body>
-    {event.location && <Body small>Lugar: {event.location}</Body>}{event.description && <Body>{event.description}</Body>}
+    {Boolean(event.location) && <Body small>Lugar: {event.location}</Body>}{Boolean(event.description) && <Body>{event.description}</Body>}
     {ended ? <Body small>Este evento ya finalizó.</Body> : <>
       {accepted && <Body small>Aceptado en este dispositivo.</Body>}
       <CardFooter><Button loading={busy} title={busy ? 'Abriendo…' : automatic ? 'Aceptar y guardar en Google Calendar' : 'Aceptar y abrir Google Calendar'} disabled={busy} onPress={() => { void accept(); }} /></CardFooter>
       <Body small>{automatic ? 'Google te pedirá autorización para guardar el evento en tu calendario.' : 'Se abre Google Calendar con los datos del evento. Confirmá Guardar allí para agregarlo a tu calendario.'}</Body>
     </>}
-    {error && <Body small>{error}</Body>}
+    {Boolean(error) && <Body small>{error}</Body>}
   </Card>;
   if (variant === 'default') return detail;
   const start = new Date(event.startsAt);
@@ -40,6 +40,6 @@ export function EventCard({ event, googleStartUrl, variant = 'default' }: { even
     <Button title={expanded ? 'Ocultar evento' : 'Ver evento'} variant="secondary" accessibilityState={{ expanded }} style={es.heroAction} onPress={() => setExpanded(!expanded)} />
   </Card> : <View style={es.eventRow}>
     <View style={es.date}><Text style={es.dateNumber}>{start.toLocaleDateString('es-AR', { timeZone: calendarTimeZone, day: 'numeric' })}</Text><Text style={es.dateMonth}>{start.toLocaleDateString('es-AR', { timeZone: calendarTimeZone, month: 'short' })}</Text></View>
-    <View style={es.eventCopy}><Body small>{date} · {time}</Body><Text accessibilityRole="header" style={es.eventTitle}>{event.title}</Text>{event.location && <Body small muted>{event.location}</Body>}<Button title={expanded ? 'Ocultar evento' : 'Ver evento'} size="sm" variant="ghost" accessibilityLabel={`${expanded ? 'Ocultar' : 'Ver'} evento: ${event.title}`} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} /></View>
+    <View style={es.eventCopy}><Body small>{date} · {time}</Body><Text accessibilityRole="header" style={es.eventTitle}>{event.title}</Text>{Boolean(event.location) && <Body small muted>{event.location}</Body>}<Button title={expanded ? 'Ocultar evento' : 'Ver evento'} size="sm" variant="ghost" accessibilityLabel={`${expanded ? 'Ocultar' : 'Ver'} evento: ${event.title}`} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} /></View>
   </View>}{expanded && detail}</View>;
 }

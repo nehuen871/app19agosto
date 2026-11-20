@@ -1,25 +1,27 @@
-import { useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
+import { Link } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { colors, spacing } from '@utn/design-tokens';
+import { specialtyLabels } from '@utn/api-client';
 import { useAuth } from '../services/auth';
 import { api } from '../services/api';
 import { BottomNavigation } from '../components/bottom-navigation';
-import { StudentMap } from '../components/student-path';
 import { UsefulLinksGrid } from '../components/useful-links-grid';
-import { Body, Button, Heading, LoadingIndicator, QueryNotice, useScreenContentStyle } from '../components/ui';
-import { newsStyles } from '../components/news-styles';
+import { Button, Card, Heading, QueryNotice, Text } from '../components/ui';
+import { studentHomeStyles as ss } from '../components/student-home-styles';
 
 export default function StudentScreen() {
-  const { user } = useAuth(), contentStyle = useScreenContentStyle();
-  const [tab, setTab] = useState<'path' | 'links'>('path');
-  const queryKey = ['student', user?.id ?? '', user?.specialty ?? ''];
-  const query = useQuery({ queryKey, queryFn: ({ signal }) => api.studentPath(signal), enabled: Boolean(user) && tab === 'path', staleTime: 0 });
-  return <View style={newsStyles.page}><View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm }}><Heading level={2}>Estudiante</Heading><View style={{ flexDirection: 'row', gap: spacing.sm }}><Button title="Mi recorrido" variant={tab === 'path' ? 'primary' : 'ghost'} accessibilityState={{ selected: tab === 'path' }} onPress={() => setTab('path')} /><Button title="Links útiles" variant={tab === 'links' ? 'primary' : 'ghost'} accessibilityState={{ selected: tab === 'links' }} onPress={() => setTab('links')} /></View></View>
-    {tab === 'links' && user ? <UsefulLinksGrid accountId={user.id} /> : <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={contentStyle} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={query.isFetching && !query.isLoading} onRefresh={() => void query.refetch()} tintColor={colors.light.primary} />}>
-    <Body small muted>Tu recorrido en UTN Buenos Aires</Body>
+  const { user } = useAuth();
+  const query = useQuery({ queryKey: ['student', user?.id ?? '', user?.specialty ?? ''], queryFn: ({ signal }) => api.studentPath(signal), enabled: Boolean(user), staleTime: 0 });
+  const specialty = query.data?.specialty ?? user?.specialty;
+  const plan = query.data?.plan;
+  const header = <View style={ss.header}>
+    <View style={ss.introduction}><Text style={ss.eyebrow}>Tu espacio en la facultad</Text><Heading style={ss.title}>Estudiar. Conectar. Seguir.</Heading></View>
+    <Card style={ss.hero}>
+      <Text style={ss.heroEyebrow}>Mi recorrido</Text><Heading level={2} style={ss.heroTitle}>Cada materia{'\n'}abre caminos.</Heading>
+      <Text style={ss.heroText}>{!query.data && query.isLoading ? 'Consultando tu recorrido…' : specialty ? `${specialtyLabels[specialty]}${plan ? ` · Plan ${plan.version}` : ''}` : 'Elegí tu especialidad y empezá tu mapa personal.'}</Text>
+      <Link href={specialty ? '/student-path' : '/account'} asChild><Button title={specialty ? 'Entrar a mi recorrido ↗' : 'Elegir mi especialidad ↗'} variant="secondary" style={ss.heroAction} /></Link>
+    </Card>
     <QueryNotice paused={query.fetchStatus === 'paused'} failed={query.isError} onRetry={() => void query.refetch()} />
-    {query.isLoading && <LoadingIndicator title="Cargando tu camino…" />}
-    {query.data && <StudentMap key={query.data.plan?.id ?? user?.specialty ?? 'none'} data={query.data} queryKey={queryKey} />}
-  </ScrollView>}<BottomNavigation current="student" /></View>;
+  </View>;
+  return <View style={ss.page}>{user && <UsefulLinksGrid accountId={user.id} header={header} editorial onRefresh={() => void query.refetch()} refreshing={query.isRefetching} />}<BottomNavigation current="student" /></View>;
 }
