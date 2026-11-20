@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import { specialties } from '@utn/types';
+import { studyStatuses } from '@utn/types';
+const studyRule = z.object({ regular: z.array(z.string().min(1)).max(300), approved: z.array(z.string().min(1)).max(300), notes: z.array(z.string().max(2000)).max(20) }).strict();
+export const studyRequirements = z.object({ enroll: studyRule, exam: studyRule }).strict();
+export const studentProgressInput = z.object({ status: z.enum(studyStatuses), expectedUpdatedAt: z.iso.datetime().nullable() }).strict();
+export const studentPlanInput = z.object({ planId: z.string().regex(/^[a-z0-9-]+$/).max(100) }).strict();
 import { decodeRich, encodeRich, richPlain, richPrefix, richLimit, richStorageLimit, richContentLimit, richContentStorageLimit } from '@utn/types';
 function newsRichField(label: string, limit: number, storageLimit: number) { return z.string().max(storageLimit).superRefine((value, context) => {
   const doc = decodeRich(value);
@@ -50,4 +56,4 @@ export const eventQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(100),
 });
 
-export const accountProfileInput = z.object({ name: z.string().trim().min(1, 'Ingresá tu nombre.').max(200, 'El nombre admite hasta 200 caracteres.') }).strict();
+export const accountProfileInput = z.object({ name: z.string().trim().min(1, 'Ingresá tu nombre.').max(200, 'El nombre admite hasta 200 caracteres.'), specialty: z.enum(specialties).nullable().optional() }).strict();

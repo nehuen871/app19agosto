@@ -2,6 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import { specialties } from '../../../packages/types';
 import { db } from './db';
 import { createApp } from './app';
 import { hashToken } from './auth';
@@ -27,7 +28,7 @@ test('profile editing requires a session of the right purpose', async () => {
   await request(app).patch('/api/v1/auth/admin/me').set('Authorization', `Bearer ${token}`).send({ name: 'Cambio' }).expect(401);
   await request(app).patch('/api/v1/auth/me').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Cambio' }).expect(401);
 });
-test('only name is editable; account identifiers, email, roles and blocking cannot be assigned', async () => {
+test('account identifiers, email, roles and blocking cannot be assigned', async () => {
   for (const input of [{ name: '' }, { name: ' ' }, { name: 'x'.repeat(201) }, { name: 'Nombre', id: otherId }, { name: 'Nombre', email: 'attacker@example.test' }, { name: 'Nombre', role: 'ADMIN' }, { name: 'Nombre', blocked: false }]) {
     await request(app).patch('/api/v1/auth/me').set('Authorization', `Bearer ${token}`).send(input).expect(400);
   }
@@ -41,6 +42,22 @@ test('cookie updates enforce origin checks and successful changes persist', asyn
   await request(app).patch('/api/v1/auth/me').set('Cookie', `utn_app_session=${token}`).set('Origin', 'http://localhost:8081').send({ name: 'Desde web' }).expect(200);
   assert.equal((await request(app).get('/api/v1/auth/me').set('Cookie', `utn_app_session=${token}`).expect(200)).body.user.name, 'Desde web');
   await request(app).patch('/api/v1/auth/admin/me').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Admin actualizado' }).expect(200);
+});
+test('specialty is optional, limited to the allowed choices, persists and belongs only to the signed-in account', async () => {
+  const target = createApp(db), endpoint = '/api/v1/auth/me';
+  assert.equal((await request(target).get(endpoint).set('Authorization', `Bearer ${token}`).expect(200)).body.user.specialty, null);
+  for (const specialty of specialties) {
+    const response = await request(target).patch(endpoint).set('Authorization', `Bearer ${token}`).send({ name: 'Desde web', specialty }).expect(200);
+    assert.equal(response.body.user.specialty, specialty);
+    assert.equal((await db.account.findUniqueOrThrow({ where: { id: accountId } })).specialty, specialty);
+  }
+  await request(target).patch(endpoint).set('Authorization', `Bearer ${token}`).send({ name: 'Nombre nuevo' }).expect(200);
+  assert.equal((await request(target).get(endpoint).set('Authorization', `Bearer ${token}`).expect(200)).body.user.specialty, 'QUIMICA');
+  for (const specialty of ['Arquitectura', '', 'Sistemas', 1, ['NAVAL']]) await request(target).patch(endpoint).set('Authorization', `Bearer ${token}`).send({ name: 'Inválido', specialty }).expect(400);
+  await request(target).patch(endpoint).set('Authorization', `Bearer ${token}`).send({ name: 'Forjado', specialty: 'NAVAL', id: otherId }).expect(400);
+  assert.equal((await db.account.findUniqueOrThrow({ where: { id: otherId } })).specialty, null);
+  const cleared = await request(target).patch(endpoint).set('Authorization', `Bearer ${token}`).send({ name: 'Desde web', specialty: null }).expect(200);
+  assert.equal(cleared.body.user.specialty, null);
 });
 test('blocked, expired and revoked sessions cannot update profiles', async () => {
   await db.account.update({ where: { id: accountId }, data: { blocked: true } });

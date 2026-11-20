@@ -32,8 +32,8 @@ export async function findSession(db: PrismaClient, token: string | undefined, p
   return session;
 }
 const bearer = (req: Request) => req.get('authorization')?.match(/^Bearer (utn_s_[A-Za-z0-9_-]{43})$/)?.[1];
-function identity(account: { id: string; name: string; email: string; role: string }) {
-  return { id: account.id, name: account.name, email: account.email, role: account.role };
+function identity(account: { id: string; name: string; email: string; role: string; specialty: string | null }) {
+  return { id: account.id, name: account.name, email: account.email, role: account.role, specialty: account.specialty };
 }
 const appLifetime = 15 * 60000;
 const refreshLifetime = 7 * 24 * 3600000;
@@ -175,7 +175,7 @@ export function authRouter(db: PrismaClient, fetcher: typeof fetch = fetch) {
       if (!session) { res.sendStatus(401); return; }
       const input = accountProfileInput.parse(req.body);
       const account = await db.$transaction(async tx => {
-        const updated = await tx.account.update({ where: { id: session.accountId }, data: { name: input.name } });
+        const updated = await tx.account.update({ where: { id: session.accountId }, data: { name: input.name, ...(input.specialty !== undefined ? { specialty: input.specialty } : {}) } });
         await tx.auditLog.create({ data: { actor: session.accountId, action: 'ACCOUNT_PROFILE_UPDATED', entityId: session.accountId } });
         return updated;
       });

@@ -7,11 +7,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
-import { AuthRequestError, createAuthApiClient, type AuthUser, type GoogleLoginConfig } from '@utn/api-client';
+import { AuthRequestError, createAuthApiClient, type AuthUser, type Specialty, type GoogleLoginConfig } from '@utn/api-client';
 
 const api = createAuthApiClient(apiUrl, 'APP', appSession.fetch);
 const returnUrl = 'utnfrba://account';
-type AuthState = { user: AuthUser | null; ready: boolean; busy: boolean; error: string; refresh: () => Promise<void>; login: (config: GoogleLoginConfig) => Promise<void>; logout: () => Promise<boolean>; updateProfile: (name: string) => Promise<void> };
+type AuthState = { user: AuthUser | null; ready: boolean; busy: boolean; error: string; refresh: () => Promise<void>; login: (config: GoogleLoginConfig) => Promise<void>; logout: () => Promise<boolean>; updateProfile: (name: string, specialty: Specialty | null) => Promise<void> };
 const AuthContext = createContext<AuthState | null>(null);
 function base64url(bytes: Uint8Array) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
@@ -58,9 +58,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     } catch { setError('No pudimos iniciar sesión. Revisá tu conexión e intentá nuevamente.'); }
     finally { setBusy(false); }
   }
-  async function updateProfile(name: string) {
+  async function updateProfile(name: string, specialty: Specialty | null) {
     const generation = sessionGeneration.current;
-    const result = await api.updateProfile(name);
+    const result = await api.updateProfile(name, undefined, specialty);
     if (generation !== sessionGeneration.current || result.user.id !== user?.id) throw new Error('La sesión cambió. Volvé a ingresar antes de guardar.');
     setUser(result.user);
   }

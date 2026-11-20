@@ -24,6 +24,15 @@ test('web proxy preserves OAuth redirects/cookies, callback and profile requests
   assert.equal(callback.status, 302); assert.equal(callback.headers.get('location'), '/account?authResult=signed-in'); assert.match(callback.headers.get('set-cookie'), /session=test/); assert.equal(seen.at(-1).cookie, 'oauth=test');
   await fetch(proxy.url + '/api/v1/auth/me', { method: 'PATCH', headers: { Cookie: 'session=test', Origin: proxy.url, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Test' }) });
   assert.equal(seen.at(-1).origin, proxy.url); assert.equal(seen.at(-1).cookie, 'session=test'); assert.equal(seen.at(-1).method, 'PATCH');
+  await fetch(proxy.url + '/api/v1/student', { headers: { Cookie: 'session=test' } });
+  assert.equal(seen.at(-1).url, '/api/v1/student'); assert.equal(seen.at(-1).cookie, 'session=test');
+  for (const [path, method] of [['/api/v1/student/plan', 'PUT'], ['/api/v1/student/courses/frba-sistemas-2023%3A1', 'PATCH']]) {
+    await fetch(proxy.url + path, { method, headers: { Cookie: 'session=test', Origin: proxy.url, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'REGULAR' }) });
+    assert.equal(seen.at(-1).method, method); assert.equal(seen.at(-1).origin, proxy.url); assert.equal(seen.at(-1).cookie, 'session=test'); assert.equal(seen.at(-1).url, path);
+    const before = seen.length;
+    assert.equal((await fetch(proxy.url + path, { method: 'POST' })).status, 405);
+    assert.equal(seen.length, before);
+  }
   const count = seen.length;
   for (const path of ['/api/v1/auth/admin/me', '/api/v1/admin/news', '/api/v1/auth/google/start?purpose=admin', '/api/unknown']) assert.equal((await fetch(proxy.url + path)).status, 404);
   assert.equal(seen.length, count);

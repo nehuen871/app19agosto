@@ -19,6 +19,8 @@ apps/admin/public/brand
 **/*.p8
 **/*-firebase-adminsdk-*.json
 .credentials
+.curriculum-research
+*.log
 **/*.jks
 **/*.keystore
 **/*.p12

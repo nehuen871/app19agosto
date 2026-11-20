@@ -1,8 +1,9 @@
 export * from './session';
 export { decodeRich, encodeRich, richText, richPlain, plainDocument, validateRichDocument, safeRichLink, richLimit, richContentLimit, richPrefix, richStorageLimit, richContentStorageLimit, type RichNode, type RichMark } from '@utn/types';
-import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage } from '@utn/types';
+import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage, StudentPath, StudyStatus } from '@utn/types';
 export * from './calendar';
 export * from './categories';
+export { studyStatuses, studyStatusLabels, unmetRequirements, ruleSatisfied, type StudentPath, type StudyCourse, type StudyStatus, type StudyRule } from '@utn/types';
 export * from './auth';
 export type { Category, CalendarEvent, EventInput, EventColor, Notification } from '@utn/types';
 
@@ -26,6 +27,7 @@ export function createApiClient(baseUrl: string, options: { fetcher?: typeof fet
         headers,
       });
       if (!response.ok) {
+        if (path.startsWith('/student') && response.status === 409) throw new Error('Tu avance cambió en otro dispositivo. Actualizá los datos y volvé a guardar.');
         throw new Error('No se pudo cargar la información. Intentá nuevamente.');
       }
       return await response.json() as T;
@@ -36,6 +38,9 @@ export function createApiClient(baseUrl: string, options: { fetcher?: typeof fet
   }
 
   return {
+    studentPath: (signal?: AbortSignal) => get<StudentPath>('/student', signal),
+    saveStudentProgress: (courseId: string, status: StudyStatus, expectedUpdatedAt: string | null) => get<{ status: StudyStatus; updatedAt: string }>(`/student/courses/${encodeURIComponent(courseId)}`, undefined, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, expectedUpdatedAt }) }),
+    selectStudentPlan: (planId: string) => get<{ saved: boolean }>('/student/plan', undefined, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planId }) }),
     news: async (page = 1, signal?: AbortSignal, filters: { category?: string; featured?: boolean; limit?: number } = {}) => {
       const query = new URLSearchParams({ page: String(page) });
       if (filters.category) query.set('category', filters.category);

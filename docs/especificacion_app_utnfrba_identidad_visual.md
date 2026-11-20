@@ -140,6 +140,36 @@ inválidas".
 Mobile guarda secretos en SecureStore. Web debe preferir cookies
 HttpOnly, Secure y SameSite apropiado.
 
+### Perfil y especialidad
+
+El perfil de la app permite indicar una especialidad opcional: Naval, Civil,
+Textil, Sistemas, Mecánica, Industrial, Electrónica, Eléctrica o Química. Se
+guarda por cuenta y solo su titular puede modificarla mediante su sesión.
+`specialty` usa un enum nullable; omitirlo al actualizar el nombre conserva
+la elección actual. Las cuentas anteriores comienzan sin especialidad.
+
+### Estudiante: mapa de desbloqueos
+
+La cuarta sección de la navegación inferior muestra el plan correspondiente a
+la especialidad del perfil. Cada cuenta conserva su propio avance por materia:
+pendiente, cursando, regularizada o aprobada. El mapa filtra por año, permite
+buscar y consultar requisitos para cursar/rendir y dependientes directas.
+
+`StudyPlan`, `StudyCourse` y `StudentProgress` almacenan el catálogo y el avance.
+Los IDs de materia son estables y la clave de avance es cuenta + materia.
+La API deriva la cuenta de la sesión APP, rechaza sesiones administrativas,
+valida Origin para cookies y detecta modificaciones concurrentes por timestamp.
+Cambiar de especialidad conserva el recorrido anterior. Las correcciones de
+estado recalculan los requisitos sin borrar estados de otras materias.
+
+El catálogo oficial de las nueve especialidades se carga explícitamente con
+`pnpm study:import`, después de las migraciones; nunca durante el arranque.
+Versiones, fuentes, alcance y condiciones manuales están documentados en
+`apps/api/prisma/study-plans/README.md`. El registro es personal y no certifica
+habilitación administrativa, vigencia de cursadas ni egreso. El indicador
+cuenta materias obligatorias y separa electivas, prácticas y título intermedio.
+La elección es declarada por el usuario y no valida su condición académica.
+
 ## 5. Roles
 
 -   `USER`: noticias, alertas, perfil y preferencias propias.

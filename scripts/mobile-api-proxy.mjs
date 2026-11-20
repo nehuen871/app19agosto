@@ -7,7 +7,7 @@ export function createMobileApiProxy(apiInternalUrl) {
   app.disable('x-powered-by');
   app.get('/health/live', (_req, res) => res.json({ status: 'ok' }));
   // Protected reads forward the browser session; OAuth entry points remain public.
-  app.get(['/api/v1/news', '/api/v1/news/:slug', '/api/v1/categories', '/api/v1/events'], async (req, res) => {
+  app.get(['/api/v1/news', '/api/v1/news/:slug', '/api/v1/categories', '/api/v1/events', '/api/v1/student'], async (req, res) => {
     try {
       const upstream = await fetch(`${apiInternalUrl}${req.originalUrl}`, { headers: req.headers.cookie ? { Cookie: req.headers.cookie } : {}, signal: AbortSignal.timeout(10000) });
       res.status(upstream.status).set('Cache-Control', 'private, no-store').type('application/json').send(await upstream.text());
@@ -49,6 +49,15 @@ export function createMobileApiProxy(apiInternalUrl) {
     } catch { res.sendStatus(503); }
   });
   app.use(express.json({ limit: '8kb' }));
+  app.all(['/api/v1/student/plan', '/api/v1/student/courses/:id'], async (req, res) => {
+    const allowed = req.path === '/api/v1/student/plan' ? 'PUT' : 'PATCH';
+    if (req.method !== allowed) { res.set('Allow', allowed).sendStatus(405); return; }
+    try {
+      const response = await fetch(`${apiInternalUrl}${req.path}`, { method: allowed, headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
+      res.status(response.status).set('Cache-Control', 'private, no-store').type('application/json').send(await response.text());
+    } catch { res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'No pudimos guardar tu avance. Intentá nuevamente.', details: [] } }); }
+  });
+
   app.post('/api/v1/google-calendar/authorize', async (req, res) => {
     try {
       const response = await fetch(`${apiInternalUrl}${req.path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}), ...(req.headers.origin ? { Origin: req.headers.origin } : {}) }, body: JSON.stringify(req.body), signal: AbortSignal.timeout(10000) });
