@@ -10,6 +10,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "demo:news": "tsx prisma/seed-news-demo.ts",
     "demo:events": "tsx prisma/seed-events-demo.ts",
+    "demo:links": "tsx prisma/seed-useful-links-demo.ts",
     "build": "node build.mjs",
     "start": "node dist/server.mjs",
     "test:security": "tsx --test src/security.test.ts",

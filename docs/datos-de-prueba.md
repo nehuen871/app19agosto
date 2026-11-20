@@ -9,6 +9,7 @@ contraseñas, sesiones o credenciales.
 | --- | --- |
 | `apps/api/prisma/seed-news-demo.ts` | 100 noticias publicadas entre enero y diciembre de 2025, 20 destacadas y cinco categorías. |
 | `apps/api/prisma/seed-events-demo.ts` | 500 eventos publicados en 2026: al menos uno por día, los cuatro colores, superposiciones, actividades de varios días y cruces de mes. Noviembre incluye 133 eventos de prueba. |
+| `apps/api/prisma/seed-useful-links-demo.ts` | 16 links útiles publicados, con 16 ilustraciones temáticas PNG y cinco destacados. Los destinos, textos y orden están en `apps/api/prisma/demo-links/links.json`; las imágenes viajan en `demo-links/images/`. |
 
 Las fechas son fijas para reproducir las mismas pruebas en cualquier ambiente.
 Las noticias usan un año completo pasado para que todas sean visibles; los
@@ -34,7 +35,10 @@ docker compose -f compose.yaml -f compose.prod-local.yaml run --rm --no-deps mig
 # Eventos
 docker compose -f compose.yaml -f compose.prod-local.yaml run --rm --no-deps migrate pnpm demo:events
 
-# Ambas, una después de otra
+# Links útiles con sus imágenes
+docker compose -f compose.yaml -f compose.prod-local.yaml run --rm --no-deps migrate pnpm demo:links
+
+# Las tres cargas, una después de otra
 docker compose -f compose.yaml -f compose.prod-local.yaml run --rm --no-deps migrate pnpm demo:all
 ```
 
@@ -56,7 +60,8 @@ pnpm --filter @utn/api db:deploy
 
 pnpm demo:news
 pnpm demo:events
-# O cargar ambas:
+pnpm demo:links
+# O cargar las tres:
 pnpm demo:all
 ```
 
@@ -70,18 +75,30 @@ No se necesitan claves de Google, Expo, Firebase o Apple para estas cargas.
   por su slug. Si hay una imagen local disponible, puede reutilizarla; en una
   base vacía las noticias no dependen de imágenes ni servicios externos.
 - Eventos solo escribe en `CalendarEvent`.
+- Links útiles solo agrega `UsefulLink` y sus imágenes en `MediaImage`. Las
+  imágenes están incluidas en el repositorio: no se descargan ni se generan
+  durante la carga. Los destinos son los enlaces de prueba proporcionados;
+  el importador no los visita, no completa formularios ni se une a grupos.
 - No crean notificaciones, entregas push ni eventos en Google Calendar.
 - Los slugs de noticias y los UUID deterministas de eventos identifican cada
   lote. Una segunda ejecución omite registros existentes, sin duplicarlos ni
   sobrescribir sus ediciones. Los demás registros se conservan.
+- Links útiles conserva también los enlaces creados en el admin con la misma
+  URL, aunque tengan otro ID. No cambia sus títulos, imágenes, orden ni
+  publicación. Si un enlace fue dado de baja, repetir el comando no lo restaura.
+  Las ejecuciones simultáneas del importador se serializan para evitar duplicados.
 - Cada lote se ejecuta en una transacción y muestra un resumen de creados,
   total del lote y distribución temporal. En una base vacía, la primera carga
-  completa crea 100 noticias y 500 eventos; repetirla informa cero creados.
+  completa crea 100 noticias, 500 eventos y 16 links útiles con sus imágenes;
+  repetirla informa cero creados. `demo:links` informa creados y omitidos.
 - Las comprobaciones del generador esperan la composición del lote original.
   Si se cambian manualmente fechas o destacadas de las noticias de prueba,
   su validación puede rechazar una repetición; no restaura ni sobrescribe esos
   cambios automáticamente.
 
-La carga de noticias y la de eventos son transacciones independientes. Si la
-segunda falla al ejecutar `demo:all`, se puede corregir la causa y repetir el
-comando: el primer lote ya creado se omite.
+Las tres cargas son transacciones independientes. Si alguna falla al ejecutar
+`demo:all`, se puede corregir la causa y repetir el comando: los lotes ya
+creados se omiten. Para trasladar la carga de links a otra instalación, conservar
+el generador, `demo-links/links.json` y la carpeta completa `demo-links/images/`.
+La instalación debe tener las migraciones vigentes, incluida
+`202611200001_useful_links`.

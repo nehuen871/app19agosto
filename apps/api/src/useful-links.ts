@@ -4,7 +4,7 @@ import { usefulLinkInput, usefulLinkUpdate, usefulLinkVersion, notificationQuery
 import { adminAuth } from './admin-auth';
 import { readerAuth } from './reader-auth';
 import type { PrismaClient } from './generated/prisma/client';
-const orderBy = [{ priority: 'asc' as const }, { id: 'asc' as const }];
+const orderBy = [{ featured: 'desc' as const }, { priority: 'asc' as const }, { id: 'asc' as const }];
 const present = <T extends { imageId: string }>(item: T) => ({ ...item, imageUrl: `/api/v1/media/${item.imageId}` });
 export function usefulLinksRouter(db: PrismaClient) {
   const router = Router();

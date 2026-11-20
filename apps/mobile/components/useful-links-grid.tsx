@@ -40,11 +40,11 @@ export function UsefulLinksGrid({ accountId }: { accountId: string }) {
     refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} tintColor={theme.primary} />}
     ListHeaderComponent={<View style={ls.header}><Heading level={2}>Todo lo que usás.{ '\n' }Siempre cerca.</Heading><Body small>Accesos y recursos para tu vida universitaria.</Body><QueryNotice paused={query.fetchStatus === 'paused'} failed={query.isError} onRetry={() => void query.refetch()} />{query.isLoading && <LoadingIndicator title="Cargando links útiles…" />}{error && <View accessibilityRole="alert"><Body>{error}</Body></View>}</View>}
     ListEmptyComponent={query.data && !query.isError ? <EmptyState title="Próximamente, tus accesos acá" description="Los enlaces publicados por el equipo aparecerán en este espacio." /> : null}
-    renderItem={({ item: row }) => <View style={ls.row}>{row.map(item => <View key={item.id} style={[ls.cell, twoColumns && row.length === 1 && !item.featured && { flex: 0, width: (width - spacing.md) / 2 }]}><LinkTile key={item.id + item.imageId} item={item} onError={setError} /></View>)}</View>}
+    renderItem={({ item: row }) => <View style={ls.row}>{row.map(item => <View key={item.id} style={[ls.cell, twoColumns && row.length === 1 && !item.featured && { flexGrow: 0, flexShrink: 0, flexBasis: (width - spacing.md) / 2 }]}><LinkTile key={item.id + item.imageId} item={item} onError={setError} /></View>)}</View>}
     ListFooterComponent={query.hasNextPage ? <Button title={query.isFetchingNextPage ? 'Cargando…' : 'Ver más enlaces'} loading={query.isFetchingNextPage} variant="outline" onPress={() => { if (!query.isFetching) void query.fetchNextPage(); }} /> : null} />;
 }
 const ls = StyleSheet.create({
-  list: { flex: 1 }, header: { gap: spacing.sm }, row: { flexDirection: 'row', gap: spacing.md }, cell: { flex: 1, minWidth: 0 },
+  list: { flex: 1 }, header: { gap: spacing.sm }, row: { flexDirection: 'row', gap: spacing.md }, cell: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   tile: { flex: 1, borderRadius: radius.lg, minHeight: spacing['2xl'] }, card: { flex: 1, padding: 0, gap: 0, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: theme.editorial },
   featured: { flexDirection: 'row', backgroundColor: theme.primary, borderColor: theme.primary }, copy: { padding: spacing.md, gap: spacing.sm, flex: 1 }, featureCopy: { minWidth: 0 },
   image: { width: '100%', aspectRatio: usefulLinksLayout.imageAspect, backgroundColor: theme.secondary }, featureImage: { width: usefulLinksLayout.featuredImageWidth, height: '100%', aspectRatio: undefined, minHeight: spacing['2xl'] * 4 },
