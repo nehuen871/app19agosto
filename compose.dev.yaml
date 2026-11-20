@@ -43,7 +43,8 @@ services:
     environment:
       NODE_ENV: development
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:4000/api/v1}
-      EXPO_PUBLIC_WEB_API_URL: ${EXPO_PUBLIC_DEV_WEB_API_URL:-http://localhost:4000/api/v1}
+      EXPO_PUBLIC_WEB_API_URL: ${EXPO_PUBLIC_DEV_WEB_API_URL:-/api/v1}
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:4000}
       REACT_NATIVE_PACKAGER_HOSTNAME: ${REACT_NATIVE_PACKAGER_HOSTNAME:-localhost}
     volumes:
       - ./apps/mobile/app:/workspace/apps/mobile/app:ro
@@ -51,6 +52,8 @@ services:
       - ./apps/mobile/services:/workspace/apps/mobile/services:ro
       - ./apps/mobile/public:/workspace/apps/mobile/public:ro
       - ./apps/mobile/app.json:/workspace/apps/mobile/app.json:ro
+      - ./apps/mobile/metro.config.mjs:/workspace/apps/mobile/metro.config.mjs:ro
+      - ./scripts/mobile-api-proxy.mjs:/workspace/scripts/mobile-api-proxy.mjs:ro
       - ./packages/brand-assets:/workspace/packages/brand-assets:ro
       - ./packages/design-tokens/index.ts:/workspace/packages/design-tokens/index.ts:ro
     networks: [frontend]
