@@ -13,11 +13,26 @@ enum SessionPurpose {
   APP
   ADMIN
 }
+enum Specialty {
+  NAVAL
+  CIVIL
+  TEXTIL
+  SISTEMAS
+  MECANICA
+  INDUSTRIAL
+  ELECTRONICA
+  ELECTRICA
+  QUIMICA
+}
 model Account {
   id String @id @default(uuid())
   googleSubject String @unique
   email String
   name String
+  specialty Specialty?
+  studyPlanId String?
+  studyPlan StudyPlan? @relation(fields: [studyPlanId], references: [id], onDelete: SetNull)
+  studentProgress StudentProgress[]
   role AccountRole @default(USER)
   blocked Boolean @default(false)
   createdAt DateTime @default(now())
@@ -26,6 +41,49 @@ model Account {
   refreshTokens AuthRefreshToken[]
   sessions AuthSession[]
   nativeTickets NativeLoginTicket[]
+  @@index([studyPlanId])
+}
+
+enum StudyStatus {
+  PENDING
+  TAKING
+  REGULAR
+  APPROVED
+}
+model StudyPlan {
+  id String @id
+  specialty Specialty
+  version String
+  name String
+  sourceUrl String
+  verifiedAt DateTime
+  notes String
+  courses StudyCourse[]
+  accounts Account[]
+  @@unique([specialty, version])
+}
+model StudyCourse {
+  id String @id
+  planId String
+  plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  code String
+  name String
+  year Int
+  kind String @default("SUBJECT")
+  requirements Json
+  notes String
+  progress StudentProgress[]
+  @@unique([planId, code])
+}
+model StudentProgress {
+  accountId String
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  courseId String
+  course StudyCourse @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  status StudyStatus @default(PENDING)
+  updatedAt DateTime @updatedAt
+  @@id([accountId, courseId])
+  @@index([courseId])
 }
 model AuthSession {
   tokenHash String @id

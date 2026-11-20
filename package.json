@@ -13,7 +13,8 @@
     "test:security": "pnpm --filter @utn/api test:security && tsx --test apps/admin/app/services/admin-authentication.test.ts apps/admin/app/services/login-config.test.ts",
     "prod:local": "./scripts/prod-local.sh",
     "smoke": "./scripts/smoke.sh",
-    "security:check": "./scripts/security-check.sh"
+    "security:check": "./scripts/security-check.sh",
+    "study:import": "pnpm --filter @utn/api study:import"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

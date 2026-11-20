@@ -1,5 +1,6 @@
 export interface Category { id: string; name: string; slug: string; parentId: string | null }
 export * from './rich-text';
+export * from './student';
 export interface News { id: string; title: string; slug: string; summary: string; content: string; coverImageUrl: string | null; featured: boolean; publishedAt: string | null; category: Category }
 export interface Page<T> { items: T[]; total: number; page: number; limit: number }
 
@@ -27,6 +28,9 @@ export interface EventInput {
 }
 export interface CalendarEvent extends EventInput { id: string; createdAt: string; updatedAt: string }
 export interface MediaImage { id: string; url: string }
-export interface AuthUser { id: string; name: string; email: string; role: 'USER' | 'ADMIN' }
+export const specialties = ['NAVAL', 'CIVIL', 'TEXTIL', 'SISTEMAS', 'MECANICA', 'INDUSTRIAL', 'ELECTRONICA', 'ELECTRICA', 'QUIMICA'] as const;
+export type Specialty = typeof specialties[number];
+export const specialtyLabels: Record<Specialty, string> = { NAVAL: 'Naval', CIVIL: 'Civil', TEXTIL: 'Textil', SISTEMAS: 'Sistemas', MECANICA: 'Mecánica', INDUSTRIAL: 'Industrial', ELECTRONICA: 'Electrónica', ELECTRICA: 'Eléctrica', QUIMICA: 'Química' };
+export interface AuthUser { id: string; name: string; email: string; role: 'USER' | 'ADMIN'; specialty: Specialty | null }
 export interface AuthSessionInfo { user: AuthUser; expiresAt: string }
 export interface GoogleLoginConfig { enabled: boolean; startUrl: string | null }

@@ -1,5 +1,6 @@
-import type { AuthSessionInfo, GoogleLoginConfig } from '@utn/types';
-export type { AuthUser, AuthSessionInfo, GoogleLoginConfig } from '@utn/types';
+import type { AuthSessionInfo, GoogleLoginConfig, Specialty } from '@utn/types';
+export type { AuthUser, AuthSessionInfo, GoogleLoginConfig, Specialty } from '@utn/types';
+export { specialties, specialtyLabels } from '@utn/types';
 export class AuthRequestError extends Error {
   constructor(public status: number) { super(status === 401 ? 'Tu sesión venció. Volvé a ingresar.' : 'No pudimos conectar. Revisá tu conexión e intentá nuevamente.'); }
 }
@@ -13,7 +14,7 @@ export function createAuthApiClient(baseUrl: string, purpose: 'APP' | 'ADMIN' = 
   return {
     config: () => request<GoogleLoginConfig>('/config'),
     me: (token?: string | null) => request<AuthSessionInfo>(prefix + '/me', token),
-    updateProfile: (name: string, token?: string | null) => request<AuthSessionInfo>(prefix + '/me', token, { name }, 'PATCH'),
+    updateProfile: (name: string, token?: string | null, specialty?: Specialty | null) => request<AuthSessionInfo>(prefix + '/me', token, { name, ...(specialty !== undefined ? { specialty } : {}) }, 'PATCH'),
     logout: (token?: string | null, refreshToken?: string) => request<void>(prefix + '/logout', token, refreshToken ? { refreshToken } : {}),
     exchange: (ticket: string, verifier: string) => request<AuthSessionInfo & { token: string; refreshToken: string; refreshExpiresAt: string }>('/native/exchange', null, { ticket, verifier }),
   };

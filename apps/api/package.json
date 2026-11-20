@@ -12,7 +12,8 @@
     "demo:events": "tsx prisma/seed-events-demo.ts",
     "build": "node build.mjs",
     "start": "node dist/server.mjs",
-    "test:security": "tsx --test src/security.test.ts"
+    "test:security": "tsx --test src/security.test.ts",
+    "study:import": "tsx prisma/import-study-plans.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
