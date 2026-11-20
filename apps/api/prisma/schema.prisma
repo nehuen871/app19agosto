@@ -171,6 +171,23 @@ model MediaImage {
   byteSize Int
   createdAt DateTime @default(now())
   news News[]
+  usefulLinks UsefulLink[]
+}
+
+model UsefulLink {
+  id String @id @default(uuid())
+  title String
+  description String
+  url String
+  imageId String
+  image MediaImage @relation(fields: [imageId], references: [id], onDelete: Restrict)
+  priority Int @default(100)
+  featured Boolean @default(false)
+  published Boolean @default(false)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([deletedAt, published, priority, id])
 }
 
 enum EventStatus {

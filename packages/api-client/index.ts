@@ -1,11 +1,12 @@
 export * from './session';
 export { decodeRich, encodeRich, richText, richPlain, plainDocument, validateRichDocument, safeRichLink, richLimit, richContentLimit, richPrefix, richStorageLimit, richContentStorageLimit, type RichNode, type RichMark } from '@utn/types';
-import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage, StudentPath, StudyStatus } from '@utn/types';
+import type { Category, News, Page, Notification, NotificationDraft, NewsInput, NewsUpdateInput, AdminNews, CalendarEvent, EventInput, MediaImage, StudentPath, StudyStatus, UsefulLink, UsefulLinkInput } from '@utn/types';
 export * from './calendar';
 export * from './categories';
 export { studyStatuses, studyStatusLabels, unmetRequirements, ruleSatisfied, type StudentPath, type StudyCourse, type StudyStatus, type StudyRule } from '@utn/types';
 export * from './auth';
 export type { Category, CalendarEvent, EventInput, EventColor, Notification } from '@utn/types';
+export type { UsefulLink, UsefulLinkInput } from '@utn/types';
 
 export function createApiClient(baseUrl: string, options: { fetcher?: typeof fetch; token?: string } = {}) {
   function cover(news: News): News {
@@ -38,6 +39,10 @@ export function createApiClient(baseUrl: string, options: { fetcher?: typeof fet
   }
 
   return {
+    usefulLinks: async (page = 1, signal?: AbortSignal) => {
+      const data = await get<Page<UsefulLink>>(`/useful-links?page=${page}&limit=20`, signal);
+      return { ...data, items: data.items.map(item => ({ ...item, imageUrl: /^https?:\/\//.test(baseUrl) ? new URL(item.imageUrl, baseUrl).href : item.imageUrl })) };
+    },
     studentPath: (signal?: AbortSignal) => get<StudentPath>('/student', signal),
     saveStudentProgress: (courseId: string, status: StudyStatus, expectedUpdatedAt: string | null) => get<{ status: StudyStatus; updatedAt: string }>(`/student/courses/${encodeURIComponent(courseId)}`, undefined, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, expectedUpdatedAt }) }),
     selectStudentPlan: (planId: string) => get<{ saved: boolean }>('/student/plan', undefined, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planId }) }),
@@ -62,7 +67,7 @@ export type { News } from '@utn/types';
 
 // Only call this client from the admin server; credentials never reach client JS.
 export function createAdminApiClient(baseUrl: string, accessToken: string) {
-  async function request<T>(path: string, payload?: { name: string; parentId?: string | null } | { published: boolean } | NotificationDraft | NewsInput | NewsUpdateInput | EventInput | Record<string, never>, resource = 'notifications', method = payload ? 'POST' : 'GET'): Promise<T> {
+  async function request<T>(path: string, payload?: { name: string; parentId?: string | null } | { published: boolean } | NotificationDraft | NewsInput | NewsUpdateInput | EventInput | UsefulLinkInput | { expectedUpdatedAt: string } | Record<string, never>, resource = 'notifications', method = payload ? 'POST' : 'GET'): Promise<T> {
     const response = await fetch(`${baseUrl}/admin/${resource}${path}`, {
       method,
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -70,6 +75,11 @@ export function createAdminApiClient(baseUrl: string, accessToken: string) {
       cache: 'no-store', signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) {
+      if (resource === 'useful-links') {
+        if (response.status === 409) throw new Error('El enlace cambió o fue eliminado. Actualizá el listado antes de guardar.');
+        if (response.status === 400) throw new Error('Revisá título, texto, URL HTTP/HTTPS, imagen y orden de importancia.');
+        throw new Error('No pudimos guardar los enlaces. Revisá la conexión e intentá nuevamente.');
+      }
       if (resource === 'categories') {
         const data = await response.json().catch(() => ({})) as { error?: { code?: string } };
         if (data.error?.code === 'CATEGORY_EXISTS') throw new Error('Ya existe una categoría con ese nombre.');
@@ -92,6 +102,10 @@ export function createAdminApiClient(baseUrl: string, accessToken: string) {
     return response.json() as Promise<T>;
   }
   return {
+    usefulLinks: (page = 1) => request<Page<UsefulLink>>(`?page=${page}`, undefined, 'useful-links'),
+    createUsefulLink: (input: UsefulLinkInput) => request<UsefulLink>('', input, 'useful-links'),
+    updateUsefulLink: (id: string, input: UsefulLinkInput, expectedUpdatedAt: string) => request<UsefulLink>(`/${encodeURIComponent(id)}`, { ...input, expectedUpdatedAt }, 'useful-links', 'PATCH'),
+    deleteUsefulLink: (id: string, expectedUpdatedAt: string) => request<{ deleted: boolean }>(`/${encodeURIComponent(id)}`, { expectedUpdatedAt }, 'useful-links', 'DELETE'),
     categories: (page = 1, limit = 20) => request<Page<Category & { _count: { news: number; children: number } }>>(`?page=${page}&limit=${limit}`, undefined, 'categories'),
     categoryChoices: () => createApiClient(baseUrl, { token: accessToken }).categories(),
     createCategory: (name: string, parentId: string | null = null) => request<Category>('', { name, parentId }, 'categories'),

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { uploadNewsImage } from './actions';
-export function ImageUpload({ onChange }: { onChange: (id: string, busy: boolean) => void }) {
+export function ImageUpload({ onChange, label = 'Subir imagen desde tu dispositivo (opcional)', alt = 'Vista previa de la imagen de la noticia', disabled = false }: { onChange: (id: string, busy: boolean) => void; label?: string; alt?: string; disabled?: boolean }) {
   const [preview, setPreview] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
   async function choose(file: File | undefined) {
@@ -15,10 +15,10 @@ export function ImageUpload({ onChange }: { onChange: (id: string, busy: boolean
     finally { setBusy(false); }
   }
   return <div className="image-upload">
-    <label htmlFor="news-image-file">Subir imagen desde tu dispositivo (opcional)</label>
-    <input id="news-image-file" type="file" accept="image/png,image/jpeg" disabled={busy} onChange={event => { void choose(event.target.files?.[0]); }} aria-describedby="image-help" />
+    <label htmlFor="news-image-file">{label}</label>
+    <input id="news-image-file" type="file" accept="image/png,image/jpeg" disabled={busy || disabled} onChange={event => { void choose(event.target.files?.[0]); }} aria-describedby="image-help" />
     <span id="image-help" className="field-help">PNG o JPEG, hasta 5 MB y 4096 px / 12 megapíxeles. Se conserva al reiniciar Docker.</span>
-    {preview && <img className="image-preview" src={preview} alt="Vista previa de la imagen de la noticia" />}
+    {preview && <img className="image-preview" src={preview} alt={alt} />}
     {busy && <p role="status">Subiendo imagen…</p>}{error && <p role="alert" className="form-error">{error}</p>}
   </div>;
 }

@@ -52,6 +52,7 @@ export const typography = {
 } as const;
 // Layout caps preserve reading length on desktop/tablets; touch targets meet 48px.
 export const layout = { contentMax: 1152, readingMax: 768, touchTarget: 48, coverAspect: 16 / 9 };
+export const usefulLinksLayout = { columns: 2, cardMinWidth: 144, featuredImageWidth: layout.touchTarget * 2, imageAspect: 4 / 3 };
 export const interaction = { pressedOpacity: 0.85, disabledOpacity: 0.55 };
 // Editorial news uses the existing spacing scale and touch target size.
 export const newsLayout = {

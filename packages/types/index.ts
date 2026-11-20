@@ -28,6 +28,8 @@ export interface EventInput {
 }
 export interface CalendarEvent extends EventInput { id: string; createdAt: string; updatedAt: string }
 export interface MediaImage { id: string; url: string }
+export interface UsefulLinkInput { title: string; description: string; url: string; imageId: string; priority: number; featured: boolean; published: boolean }
+export interface UsefulLink extends UsefulLinkInput { id: string; imageUrl: string; createdAt: string; updatedAt: string }
 export const specialties = ['NAVAL', 'CIVIL', 'TEXTIL', 'SISTEMAS', 'MECANICA', 'INDUSTRIAL', 'ELECTRONICA', 'ELECTRICA', 'QUIMICA'] as const;
 export type Specialty = typeof specialties[number];
 export const specialtyLabels: Record<Specialty, string> = { NAVAL: 'Naval', CIVIL: 'Civil', TEXTIL: 'Textil', SISTEMAS: 'Sistemas', MECANICA: 'Mecánica', INDUSTRIAL: 'Industrial', ELECTRONICA: 'Electrónica', ELECTRICA: 'Eléctrica', QUIMICA: 'Química' };
